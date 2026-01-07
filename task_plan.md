@@ -16,17 +16,17 @@
   - [x] 2.3 Определить структуры данных (state, match)
   - [x] 2.4 Описать основной цикл (search → label → highlight → input)
 
-- [ ] Phase 3: Реализация MVP
+- [x] Phase 3: Реализация MVP
   - [x] 3.1 emacs-flash-state.el — cl-defstruct для state и match
-  - [ ] 3.2 emacs-flash-search.el — поиск совпадений в видимых окнах
-  - [ ] 3.3 emacs-flash-highlight.el — overlays для backdrop, matches, labels
-  - [ ] 3.4 emacs-flash-label.el — назначение меток с пропуском конфликтных
-  - [ ] 3.5 emacs-flash-jump.el — прыжок к метке, переключение окон
-  - [ ] 3.6 emacs-flash.el — главный модуль, основной цикл, defcustom
-  - [ ] 3.7 Ручное тестирование базового функционала
+  - [x] 3.2 emacs-flash-search.el — поиск совпадений в видимых окнах
+  - [x] 3.3 emacs-flash-highlight.el — overlays для backdrop, matches, labels
+  - [x] 3.4 emacs-flash-label.el — назначение меток с пропуском конфликтных
+  - [x] 3.5 emacs-flash-jump.el — прыжок к метке, переключение окон
+  - [x] 3.6 emacs-flash.el — главный модуль, основной цикл, defcustom
+  - [x] 3.7 Ручное тестирование базового функционала
 
 - [ ] Phase 4: Расширенные функции
-  - [ ] 4.1 emacs-flash-evil.el — интеграция с evil-mode
+  - [x] 4.1 emacs-flash-evil.el — интеграция с evil-mode
   - [ ] 4.2 Rainbow labels (разноцветные метки)
   - [ ] 4.3 Поддержка regex поиска
   - [ ] 4.4 Case-fold настройка
@@ -50,7 +50,7 @@
 - [Тесты]: ERT тесты для каждого модуля, все тесты должны проходить
 
 ## Status
-**Phase 3.2** — Реализация emacs-flash-search.el
+**Phase 4.1** — Завершено emacs-flash-evil.el (47 тестов)
 
 ## Files
 - `task_plan.md` — этот файл

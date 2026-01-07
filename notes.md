@@ -161,3 +161,54 @@ if vim.fn.foldclosed(line) ~= -1 then vim.cmd("normal! zO") end
 - `(invisible-p pos)` — проверка invisible text
 - `(outline-show-entry)` или `(org-show-context)` — разворачивание
 - Добавить поле `fold` в `emacs-flash-match`
+
+### Phase 3.4 — emacs-flash-label.el
+
+**Implemented:**
+- `emacs-flash-labels` — дефолтная строка меток "asdfjkl;..."
+- `emacs-flash-label-matches` — назначение меток совпадениям
+- `emacs-flash--available-labels` — пропуск конфликтных меток
+- `emacs-flash--label-conflicts-p` — проверка конфликта через поиск
+- `emacs-flash--sort-by-distance` — сортировка по расстоянию от курсора
+- `emacs-flash-find-match-by-label` — поиск match по метке
+
+**Design decisions:**
+- Labels assigned to matches closest to cursor first
+- Conflict check: if "ab" found and user could type "abc", label 'c' skipped
+- Search in all windows for conflict detection
+
+### Phase 3.5 — emacs-flash-jump.el
+
+**Implemented:**
+- `emacs-flash-jump-to-match` — прыжок к match с переключением окна
+- `emacs-flash-jump-to-label` — прыжок по метке
+- `emacs-flash-jump-to-first` — прыжок к первому match
+- `emacs-flash-return-to-start` — возврат к исходной позиции
+- `emacs-flash--unfold-at-point` — разворачивание fold
+
+**Fold support:**
+- org-mode: `org-show-context`
+- outline-mode: `outline-show-entry`
+- hideshow: `hs-show-block`
+- fallback: remove invisible property
+
+### Phase 3.6 — emacs-flash.el
+
+**Implemented:**
+- `emacs-flash-jump` — главная интерактивная команда
+- `emacs-flash--loop` — основной цикл ввода
+- `emacs-flash--format-prompt` — форматирование промпта
+
+**Defcustoms:**
+- `emacs-flash-labels` — символы для меток
+- `emacs-flash-multi-window` — поиск во всех окнах
+- `emacs-flash-autojump` — прыжок при единственном совпадении
+- `emacs-flash-backdrop` — затемнение фона
+- `emacs-flash-case-fold` — игнорирование регистра
+
+**Input handling:**
+- ESC — отмена, возврат к исходной позиции
+- RET — прыжок к первому совпадению
+- Backspace — удаление последнего символа
+- Label char — прыжок к метке
+- Other char — добавление к паттерну
