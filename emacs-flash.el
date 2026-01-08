@@ -90,6 +90,14 @@ When nil, only labels are shown, keeping original syntax highlighting."
                  (const :tag "End of line" eol))
   :group 'emacs-flash)
 
+(defcustom emacs-flash-jump-position 'start
+  "Where to place cursor after jumping to a match.
+- `start': Cursor at the beginning of the match (default)
+- `end': Cursor at the end of the match"
+  :type '(choice (const :tag "Start of match" start)
+                 (const :tag "End of match" end))
+  :group 'emacs-flash)
+
 ;;; Main Command
 
 ;;;###autoload

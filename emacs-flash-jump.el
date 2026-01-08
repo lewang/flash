@@ -11,20 +11,30 @@
 
 (require 'emacs-flash-state)
 
+;;; Configuration (set by emacs-flash.el)
+
+(defvar emacs-flash-jump-position)  ; defined in emacs-flash.el
+
 ;;; Jump Functions
 
 (defun emacs-flash-jump-to-match (match)
   "Jump to MATCH position.
-Switches window if needed, unfolds if target is in fold."
+Switches window if needed, unfolds if target is in fold.
+Uses `emacs-flash-jump-position' to determine cursor placement."
   (when match
     (let ((win (emacs-flash-match-window match))
           (pos (emacs-flash-match-pos match))
-          (fold (emacs-flash-match-fold match)))
+          (end-pos (emacs-flash-match-end-pos match))
+          (fold (emacs-flash-match-fold match))
+          (jump-pos (if (boundp 'emacs-flash-jump-position)
+                        emacs-flash-jump-position
+                      'start)))
       ;; Switch window if needed
       (unless (eq win (selected-window))
         (select-window win))
-      ;; Jump to position
-      (goto-char (marker-position pos))
+      ;; Jump to position based on setting
+      (goto-char (marker-position
+                  (if (eq jump-pos 'end) end-pos pos)))
       ;; Unfold if in fold
       (when fold
         (emacs-flash--unfold-at-point))

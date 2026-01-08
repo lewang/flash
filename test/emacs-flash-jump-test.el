@@ -140,5 +140,43 @@
       (should (eq match2 (emacs-flash--find-match-by-label state ?b)))
       (should-not (emacs-flash--find-match-by-label state ?c)))))
 
+;;; Jump Position Tests
+
+(ert-deftest emacs-flash-jump-position-start-test ()
+  "Test jump to start of match (default)."
+  (with-temp-buffer
+    (insert "foo bar baz")
+    (goto-char (point-min))
+    (set-window-buffer (selected-window) (current-buffer))
+    (let ((emacs-flash-jump-position 'start)
+          (match (make-emacs-flash-match
+                  :pos (copy-marker 5)
+                  :end-pos (copy-marker 8)
+                  :label ?a
+                  :window (selected-window)
+                  :fold nil)))
+      (emacs-flash-jump-to-match match)
+      (should (= 5 (point))))))
+
+(ert-deftest emacs-flash-jump-position-end-test ()
+  "Test jump to end of match."
+  (with-temp-buffer
+    (insert "foo bar baz")
+    (goto-char (point-min))
+    (set-window-buffer (selected-window) (current-buffer))
+    (let ((emacs-flash-jump-position 'end)
+          (match (make-emacs-flash-match
+                  :pos (copy-marker 5)
+                  :end-pos (copy-marker 8)
+                  :label ?a
+                  :window (selected-window)
+                  :fold nil)))
+      (emacs-flash-jump-to-match match)
+      (should (= 8 (point))))))
+
+(ert-deftest emacs-flash-jump-position-defcustom-test ()
+  "Test that jump-position defcustom exists."
+  (should (boundp 'emacs-flash-jump-position)))
+
 (provide 'emacs-flash-jump-test)
 ;;; emacs-flash-jump-test.el ends here
