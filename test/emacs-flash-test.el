@@ -57,6 +57,37 @@
   (should (boundp 'emacs-flash-highlight-matches))
   (should (booleanp emacs-flash-highlight-matches)))
 
+;;; Phase 7 defcustom tests
+
+(ert-deftest emacs-flash-defcustom-jumplist-test ()
+  "Test that jumplist defcustom exists and defaults to t."
+  (should (boundp 'emacs-flash-jumplist))
+  (should (eq t emacs-flash-jumplist)))
+
+(ert-deftest emacs-flash-defcustom-search-history-test ()
+  "Test that search-history defcustom exists and defaults to nil."
+  (should (boundp 'emacs-flash-search-history))
+  (should (null emacs-flash-search-history)))
+
+(ert-deftest emacs-flash-defcustom-nohlsearch-test ()
+  "Test that nohlsearch defcustom exists and defaults to nil."
+  (should (boundp 'emacs-flash-nohlsearch))
+  (should (null emacs-flash-nohlsearch)))
+
+(ert-deftest emacs-flash-defcustom-min-pattern-length-test ()
+  "Test that min-pattern-length defcustom exists and defaults to 0."
+  (should (boundp 'emacs-flash-min-pattern-length))
+  (should (= 0 emacs-flash-min-pattern-length)))
+
+(ert-deftest emacs-flash-last-pattern-var-test ()
+  "Test that last-pattern variable exists."
+  (should (boundp 'emacs-flash--last-pattern)))
+
+(ert-deftest emacs-flash-jump-continue-exists-test ()
+  "Test that emacs-flash-jump-continue command exists."
+  (should (fboundp 'emacs-flash-jump-continue))
+  (should (commandp 'emacs-flash-jump-continue)))
+
 (ert-deftest emacs-flash-multi-window-search-test ()
   "Test search works across multiple windows with different buffers."
   (let ((buf1 (generate-new-buffer "*flash-test-1*"))

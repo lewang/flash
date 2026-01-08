@@ -98,6 +98,37 @@ When nil, only labels are shown, keeping original syntax highlighting."
                  (const :tag "End of match" end))
   :group 'emacs-flash)
 
+(defcustom emacs-flash-jumplist t
+  "When non-nil, save position to mark ring before jumping.
+This allows returning to the previous position with `C-u C-SPC'
+or `C-x C-SPC' (global mark), or with evil's `C-o'."
+  :type 'boolean
+  :group 'emacs-flash)
+
+(defcustom emacs-flash-search-history nil
+  "When non-nil, add search pattern to Emacs search history.
+The pattern will appear in `isearch' history (M-p/M-n)."
+  :type 'boolean
+  :group 'emacs-flash)
+
+(defcustom emacs-flash-nohlsearch nil
+  "When non-nil, clear search highlighting after jump.
+Works with both isearch and evil-search highlighting."
+  :type 'boolean
+  :group 'emacs-flash)
+
+(defcustom emacs-flash-min-pattern-length 0
+  "Minimum pattern length to show jump labels.
+Labels won't appear until the pattern reaches this length.
+Set to 0 to always show labels (default)."
+  :type 'integer
+  :group 'emacs-flash)
+
+;;; State for continue functionality
+
+(defvar emacs-flash--last-pattern nil
+  "Last search pattern used in flash jump.")
+
 ;;; Main Command
 
 ;;;###autoload
@@ -127,16 +158,23 @@ Returns t if jump was made, nil if cancelled."
       ;; Update search results
       (emacs-flash-search state)
 
-      ;; Assign labels
-      (emacs-flash-label-matches state)
+      ;; Assign labels (respecting min-pattern-length)
+      (if (>= (length (emacs-flash-state-pattern state))
+              emacs-flash-min-pattern-length)
+          (emacs-flash-label-matches state)
+        ;; Clear labels if pattern too short
+        (dolist (match (emacs-flash-state-matches state))
+          (setf (emacs-flash-match-label match) nil)))
 
       ;; Update display
       (emacs-flash-highlight-update state)
 
-      ;; Autojump if single match
+      ;; Autojump if single match (and pattern long enough)
       (when (and emacs-flash-autojump
-                 (= (length (emacs-flash-state-matches state)) 1))
-        (emacs-flash-jump-to-first state)
+                 (= (length (emacs-flash-state-matches state)) 1)
+                 (>= (length (emacs-flash-state-pattern state))
+                     emacs-flash-min-pattern-length))
+        (emacs-flash--do-jump state)
         (throw 'emacs-flash-done t))
 
       ;; Read input
@@ -153,7 +191,7 @@ Returns t if jump was made, nil if cancelled."
          ;; Enter - jump to first match
          ((= char ?\r)
           (when (emacs-flash-state-matches state)
-            (emacs-flash-jump-to-first state))
+            (emacs-flash--do-jump state))
           (throw 'emacs-flash-done t))
 
          ;; Backspace - delete last char
@@ -164,6 +202,7 @@ Returns t if jump was made, nil if cancelled."
 
          ;; Check if it's a label
          ((emacs-flash-jump-to-label state char)
+          (emacs-flash--save-pattern state)
           (throw 'emacs-flash-done t))
 
          ;; Add to pattern
@@ -171,11 +210,46 @@ Returns t if jump was made, nil if cancelled."
           (setf (emacs-flash-state-pattern state)
                 (concat pattern (char-to-string char)))))))))
 
+(defun emacs-flash--do-jump (state)
+  "Perform jump to first match in STATE.
+Also saves pattern and adds to search history."
+  (emacs-flash-jump-to-first state)
+  (emacs-flash--save-pattern state))
+
+(defun emacs-flash--save-pattern (state)
+  "Save pattern from STATE for continue and search history."
+  (let ((pattern (emacs-flash-state-pattern state)))
+    (when (> (length pattern) 0)
+      ;; Save for continue
+      (setq emacs-flash--last-pattern pattern)
+      ;; Add to search history
+      (when emacs-flash-search-history
+        (isearch-update-ring pattern)))))
+
 (defun emacs-flash--format-prompt (pattern match-count)
   "Format prompt string showing PATTERN and MATCH-COUNT."
   (if (string-empty-p pattern)
       "Flash: "
     (format "Flash [%s] (%d): " pattern match-count)))
+
+;;;###autoload
+(defun emacs-flash-jump-continue ()
+  "Continue flash jump with the last search pattern.
+If no previous pattern exists, starts a new search."
+  (interactive)
+  (let ((windows (if emacs-flash-multi-window
+                     (window-list nil 'no-minibuf)
+                   (list (selected-window)))))
+    (let ((state (emacs-flash-state-create windows)))
+      (setf (emacs-flash-state-start-window state) (selected-window))
+      (setf (emacs-flash-state-start-point state) (point))
+      ;; Set initial pattern from last search
+      (when emacs-flash--last-pattern
+        (setf (emacs-flash-state-pattern state) emacs-flash--last-pattern))
+      (unwind-protect
+          (emacs-flash--loop state)
+        (emacs-flash-highlight-clear state)
+        (emacs-flash-state-cleanup state)))))
 
 (provide 'emacs-flash)
 ;;; emacs-flash.el ends here

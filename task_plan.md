@@ -55,6 +55,13 @@
     - `start` — в начало совпадения (default)
     - `end` — в конец совпадения
 
+- [x] Phase 7: Дополнительные опции
+  - [x] 7.1 Jumplist integration — сохранение в jumplist перед прыжком
+  - [x] 7.2 Search history — добавление паттерна в историю поиска
+  - [x] 7.3 Nohlsearch — очистка подсветки после прыжка
+  - [x] 7.4 Continue last search — продолжение последнего поиска
+  - [x] 7.5 Min pattern length — минимальная длина для показа меток
+
 ## Blocked / Open Questions
 (все решены)
 
@@ -69,11 +76,26 @@
 - [Тесты]: ERT тесты для каждого модуля, все тесты должны проходить
 
 ## Status
-**Phase 6 завершена** — 66 тестов проходят
+**Phase 7 завершена** — 72 теста проходят
 
-**Следующий этап:** Phase 5 (документация)
+**Примеры тестирования:** examples.md обновлён (сценарии 19-27)
+
+**Следующий этап:** Phase 5 (документация) и git commit
 
 ### Новые возможности:
+
+**Phase 7:**
+- Jumplist integration — `emacs-flash-jumplist` (default: t)
+  - Сохраняет позицию в mark ring перед прыжком
+  - Возврат через `C-u C-SPC` или evil `C-o`
+- Search history — `emacs-flash-search-history` (default: nil)
+  - Добавляет паттерн в историю isearch
+- Nohlsearch — `emacs-flash-nohlsearch` (default: nil)
+  - Очищает подсветку поиска после прыжка
+- Continue last search — `emacs-flash-jump-continue`
+  - Команда для продолжения последнего поиска
+- Min pattern length — `emacs-flash-min-pattern-length` (default: 0)
+  - Минимальная длина паттерна для показа меток
 
 **Phase 6.4:**
 - Jump position — позиция курсора после прыжка

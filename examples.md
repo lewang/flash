@@ -333,3 +333,306 @@
 - Искать в свёрнутых регионах?
 - Разворачивать при прыжке?
 ```
+
+---
+
+## Phase 6: Расширенные режимы
+
+### 19. Char motions (f/t/F/T)
+
+**Сценарий:** Улучшенные движения по символам
+
+```
+Подготовка:
+- evil-mode активен
+- Буфер: "hello world help whale"
+- Курсор в начале строки
+- (emacs-flash-char-setup-evil-keys) выполнен
+
+Действия:
+1. Нажать 'f' затем 'l'
+
+Ожидание:
+- Прыжок к первому 'l' в "hello"
+- Метки на остальных 'l' (если emacs-flash-char-jump-labels = t)
+
+Действия (продолжение):
+2. Нажать ';' (повтор)
+
+Ожидание:
+- Прыжок к следующему 'l'
+
+Действия:
+3. Нажать ',' (обратный повтор)
+
+Ожидание:
+- Возврат к предыдущему 'l'
+```
+
+### 20. Search integration (isearch/evil-search)
+
+**Сценарий:** Flash метки во время поиска
+
+```
+Подготовка:
+- (emacs-flash-isearch-mode 1)
+- Буфер: "hello world hello there hello"
+
+Действия (smart skip - default):
+1. Нажать C-s (или '/' в evil)
+2. Набрать "hel"
+3. Увидеть подсветку поиска + метки на совпадениях
+4. Нажать метку (например 's')
+
+Ожидание:
+- Прыжок к соответствующему "hel"
+- Выход из режима поиска
+
+Действия (trigger mode):
+1. Установить (setq emacs-flash-isearch-trigger ";")
+2. Нажать C-s, набрать "hel"
+3. Нажать ';'
+4. Увидеть "[label?]" в minibuffer
+5. Нажать метку
+
+Ожидание:
+- Прыжок к совпадению
+```
+
+### 21. Label positioning
+
+**Сценарий:** Разные позиции меток
+
+```
+Подготовка:
+- Буфер: "hello world"
+
+Тест 1 - after (default):
+- (setq emacs-flash-label-position 'after)
+- M-x emacs-flash-jump, набрать "hel"
+- Ожидание: метка ПОСЛЕ "hel" → "hel[a]lo"
+
+Тест 2 - before:
+- (setq emacs-flash-label-position 'before)
+- Ожидание: метка ПЕРЕД "hel" → "[a]hello"
+
+Тест 3 - overlay:
+- (setq emacs-flash-label-position 'overlay)
+- Ожидание: метка ВМЕСТО первого символа → "[a]ello"
+
+Тест 4 - eol:
+- (setq emacs-flash-label-position 'eol)
+- Ожидание: метка В КОНЦЕ строки
+```
+
+### 22. Jump position
+
+**Сценарий:** Позиция курсора после прыжка
+
+```
+Подготовка:
+- Буфер: "hello world"
+
+Тест 1 - start (default):
+- (setq emacs-flash-jump-position 'start)
+- M-x emacs-flash-jump, набрать "wor", выбрать метку
+- Ожидание: курсор на 'w' (начало "world")
+
+Тест 2 - end:
+- (setq emacs-flash-jump-position 'end)
+- M-x emacs-flash-jump, набрать "wor", выбрать метку
+- Ожидание: курсор ПОСЛЕ "wor" (перед "ld")
+```
+
+---
+
+## Phase 7: Дополнительные опции
+
+### 23. Jumplist integration
+
+**Сценарий:** Сохранение позиции для возврата
+
+```
+Подготовка:
+- emacs-flash-jumplist = t (default)
+- Буфер с текстом, курсор на строке 10, колонка 5
+
+Действия:
+1. Запомнить текущую позицию (строка 10)
+2. M-x emacs-flash-jump
+3. Набрать паттерн и прыгнуть к совпадению на строке 50
+4. Нажать C-u C-SPC (pop-global-mark)
+
+Ожидание:
+- Курсор возвращается на строку 10, колонку 5
+- Позиция была сохранена перед прыжком
+
+Действия (с evil):
+1. После прыжка нажать C-o (evil-jump-backward)
+
+Ожидание:
+- Возврат к предыдущей позиции
+
+Тест отключения:
+- (setq emacs-flash-jumplist nil)
+- Повторить прыжок
+- C-u C-SPC НЕ возвращает к позиции перед прыжком
+```
+
+### 24. Search history
+
+**Сценарий:** Добавление паттерна в историю isearch
+
+```
+Подготовка:
+- emacs-flash-search-history = nil (default)
+- Пустая история isearch
+
+Тест 1 (отключено):
+1. M-x emacs-flash-jump
+2. Набрать "test" и прыгнуть
+3. Нажать C-s (isearch-forward)
+4. Нажать M-p (previous history)
+
+Ожидание:
+- "test" НЕ появляется в истории
+
+Тест 2 (включено):
+1. (setq emacs-flash-search-history t)
+2. M-x emacs-flash-jump
+3. Набрать "hello" и прыгнуть
+4. Нажать C-s (isearch-forward)
+5. Нажать M-p (previous history)
+
+Ожидание:
+- "hello" появляется в истории поиска
+- Можно использовать для повторного поиска
+```
+
+### 25. Nohlsearch
+
+**Сценарий:** Очистка подсветки поиска после прыжка
+
+```
+Подготовка:
+- emacs-flash-nohlsearch = nil (default)
+- Буфер: "test word test word test"
+
+Тест 1 (отключено):
+1. Нажать C-s, набрать "test", нажать C-g (отмена)
+2. Видим подсветку всех "test" (lazy-highlight)
+3. M-x emacs-flash-jump, набрать "word", прыгнуть
+
+Ожидание:
+- Подсветка "test" ОСТАЁТСЯ после прыжка
+
+Тест 2 (включено):
+1. (setq emacs-flash-nohlsearch t)
+2. Нажать C-s, набрать "test", нажать C-g
+3. Видим подсветку
+4. M-x emacs-flash-jump, набрать "word", прыгнуть
+
+Ожидание:
+- Подсветка "test" ОЧИЩАЕТСЯ после прыжка
+
+Тест 3 (с evil-search):
+1. Нажать '/' в evil, набрать "test", Enter
+2. Видим подсветку (evil-ex-search)
+3. (setq emacs-flash-nohlsearch t)
+4. M-x emacs-flash-jump, прыгнуть
+
+Ожидание:
+- Подсветка evil-search также очищается
+```
+
+### 26. Continue last search
+
+**Сценарий:** Продолжение последнего поиска
+
+```
+Подготовка:
+- Буфер: "hello world hello there hello"
+- Курсор в начале
+
+Действия:
+1. M-x emacs-flash-jump
+2. Набрать "hello" и прыгнуть к первому совпадению
+3. (Курсор теперь на первом "hello")
+4. M-x emacs-flash-jump-continue
+
+Ожидание:
+- Сессия начинается с паттерном "hello" уже введённым
+- Метки показаны на всех "hello"
+- Prompt показывает "Flash [hello] (3):"
+- Можно сразу выбрать метку или продолжить ввод
+
+Действия (продолжение):
+5. Нажать метку для второго "hello"
+
+Ожидание:
+- Прыжок ко второму "hello"
+
+Тест без предыдущего поиска:
+1. Перезапустить Emacs (или setq emacs-flash--last-pattern nil)
+2. M-x emacs-flash-jump-continue
+
+Ожидание:
+- Работает как обычный emacs-flash-jump
+- Паттерн пустой
+```
+
+### 27. Min pattern length
+
+**Сценарий:** Минимальная длина паттерна для показа меток
+
+```
+Подготовка:
+- emacs-flash-min-pattern-length = 0 (default)
+- Буфер: "a b c a b c"
+
+Тест 1 (без ограничения):
+1. M-x emacs-flash-jump
+2. Набрать "a"
+
+Ожидание:
+- Метки показаны сразу на всех "a"
+
+Тест 2 (с ограничением):
+1. (setq emacs-flash-min-pattern-length 2)
+2. M-x emacs-flash-jump
+3. Набрать "a"
+
+Ожидание:
+- Совпадения подсвечены, но МЕТКИ НЕ ПОКАЗАНЫ
+- Паттерн слишком короткий
+
+Действия (продолжение):
+4. Набрать "b" (теперь паттерн "ab" - ошибка, нет таких)
+   Вместо этого: набрать " " (паттерн "a " - 2 символа)
+
+Альтернативный тест:
+1. (setq emacs-flash-min-pattern-length 2)
+2. Буфер: "hello world hello"
+3. M-x emacs-flash-jump
+4. Набрать "h" - нет меток
+5. Набрать "e" (паттерн "he") - метки появляются
+
+Ожидание:
+- Метки появляются только при length >= 2
+
+Тест 3 (autojump и min-length):
+1. (setq emacs-flash-min-pattern-length 3)
+2. (setq emacs-flash-autojump t)
+3. Буфер с одним "unique" словом
+4. M-x emacs-flash-jump
+5. Набрать "un" (2 символа)
+
+Ожидание:
+- Autojump НЕ срабатывает (паттерн слишком короткий)
+
+Действия:
+6. Набрать "i" (паттерн "uni", 3 символа)
+
+Ожидание:
+- Autojump срабатывает, прыгает к "unique"
+```
