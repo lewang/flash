@@ -198,6 +198,7 @@ Returns t if jump was made, nil if cancelled."
         (throw 'emacs-flash-done t))
 
       ;; Read input
+      (redisplay t)  ; Force display update before reading
       (let* ((pattern (emacs-flash-state-pattern state))
              (match-count (length (emacs-flash-state-matches state)))
              (prompt (emacs-flash--format-prompt pattern match-count))
