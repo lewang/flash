@@ -129,6 +129,16 @@ Set to 0 to always show labels (default)."
 (defvar emacs-flash--last-pattern nil
   "Last search pattern used in flash jump.")
 
+;;; Forward declarations for evil
+(defvar evil-ex-search-history)
+
+(defun emacs-flash--add-to-evil-search-history (pattern)
+  "Add PATTERN to evil search history.
+Adds to `evil-ex-search-history' for evil-search module."
+  (when (boundp 'evil-ex-search-history)
+    (unless (equal pattern (car evil-ex-search-history))
+      (push pattern evil-ex-search-history))))
+
 ;;; Main Command
 
 ;;;###autoload
@@ -224,7 +234,11 @@ Also saves pattern and adds to search history."
       (setq emacs-flash--last-pattern pattern)
       ;; Add to search history
       (when emacs-flash-search-history
-        (isearch-update-ring pattern)))))
+        ;; Emacs isearch history
+        (isearch-update-ring pattern)
+        ;; Evil search history (if available)
+        (when (featurep 'evil)
+          (emacs-flash--add-to-evil-search-history pattern))))))
 
 (defun emacs-flash--format-prompt (pattern match-count)
   "Format prompt string showing PATTERN and MATCH-COUNT."
