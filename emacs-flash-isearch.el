@@ -45,6 +45,15 @@ Set to nil to disable toggle functionality."
                  (const :tag "Disabled" nil))
   :group 'emacs-flash-isearch)
 
+(defcustom emacs-flash-isearch-trigger nil
+  "Character that activates label jumping during search.
+When nil, labels work directly - smart skip prevents conflicts
+by not assigning labels that would continue the search pattern.
+When set (e.g. \";\"), you must type trigger + label to jump."
+  :type '(choice (const :tag "No trigger - use smart skip" nil)
+                 (string :tag "Trigger character"))
+  :group 'emacs-flash-isearch)
+
 ;;; State Variables
 
 (defvar emacs-flash-isearch--state nil
@@ -55,6 +64,9 @@ Set to nil to disable toggle functionality."
 
 (defvar emacs-flash-isearch--in-session nil
   "Non-nil when inside a search session (for keymap activation).")
+
+(defvar emacs-flash-isearch--label-mode nil
+  "Non-nil when trigger was pressed and next char is label.")
 
 (defvar emacs-flash-isearch--original-buffer nil
   "Buffer where search started.")
@@ -92,6 +104,7 @@ Set to nil to disable toggle functionality."
   (setq emacs-flash-isearch--state nil)
   (setq emacs-flash-isearch--active nil)
   (setq emacs-flash-isearch--in-session nil)
+  (setq emacs-flash-isearch--label-mode nil)
   (setq emacs-flash-isearch--original-buffer nil))
 
 (defun emacs-flash-isearch--update (pattern)
@@ -184,13 +197,32 @@ Set to nil to disable toggle functionality."
           (emacs-flash-isearch--update pattern))))))
 
 (defun emacs-flash-isearch--evil-pre-command ()
-  "Check if user pressed a label key before the command runs."
+  "Check if user pressed trigger or label key.
+With trigger: press trigger char to activate labels, then press label to jump.
+Without trigger: any label char jumps (only when multiple matches)."
   (when (and emacs-flash-isearch--active
              emacs-flash-isearch--state
              (characterp last-command-event))
-    (when (emacs-flash-isearch--try-jump last-command-event)
-      ;; Exit minibuffer after jump
-      (exit-minibuffer))))
+    (cond
+     ;; Label mode is active - next char is the label
+     (emacs-flash-isearch--label-mode
+      (setq emacs-flash-isearch--label-mode nil)
+      (when (emacs-flash-isearch--try-jump last-command-event)
+        (exit-minibuffer)))
+     ;; Trigger character pressed - activate label mode
+     ((and emacs-flash-isearch-trigger
+           (= last-command-event (string-to-char emacs-flash-isearch-trigger))
+           (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 0))
+      (setq emacs-flash-isearch--label-mode t)
+      ;; Show indicator in minibuffer
+      (minibuffer-message " [label?]")
+      ;; Consume the trigger - don't add to search pattern
+      (setq this-command 'ignore))
+     ;; No trigger configured - old behavior (jump on label, only with multiple matches)
+     ((and (null emacs-flash-isearch-trigger)
+           (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 1))
+      (when (emacs-flash-isearch--try-jump last-command-event)
+        (exit-minibuffer))))))
 
 (defvar emacs-flash-isearch--emulation-alist nil
   "Alist for `emulation-mode-map-alists' to override evil keymaps.")
@@ -267,11 +299,46 @@ Set to nil to disable toggle functionality."
              (bound-and-true-p isearch-string))
     (emacs-flash-isearch--update isearch-string)))
 
+(defun emacs-flash-isearch--printing-char-advice (orig-fun &rest args)
+  "Advice for `isearch-printing-char' to intercept label keys.
+ORIG-FUN is the original function, ARGS are passed through."
+  (if (and emacs-flash-isearch--active
+           emacs-flash-isearch--state
+           (characterp last-command-event))
+      (cond
+       ;; Label mode is active - next char is the label
+       (emacs-flash-isearch--label-mode
+        (setq emacs-flash-isearch--label-mode nil)
+        (if (emacs-flash-isearch--try-jump last-command-event)
+            (isearch-exit)
+          ;; Not a valid label, continue with normal input
+          (apply orig-fun args)))
+       ;; Trigger character pressed - activate label mode
+       ((and emacs-flash-isearch-trigger
+             (= last-command-event (string-to-char emacs-flash-isearch-trigger))
+             (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 0))
+        (setq emacs-flash-isearch--label-mode t)
+        (message "[label?]"))
+       ;; No trigger configured - try jump on label (only with multiple matches)
+       ((and (null emacs-flash-isearch-trigger)
+             (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 1))
+        (if (emacs-flash-isearch--try-jump last-command-event)
+            (isearch-exit)
+          ;; Not a valid label, continue with normal input
+          (apply orig-fun args)))
+       ;; Default - normal isearch behavior
+       (t (apply orig-fun args)))
+    ;; Flash not active - normal behavior
+    (apply orig-fun args)))
+
 (defun emacs-flash-isearch--setup-isearch ()
   "Set up isearch integration."
   (add-hook 'isearch-mode-hook #'emacs-flash-isearch--isearch-start)
   (add-hook 'isearch-mode-end-hook #'emacs-flash-isearch--isearch-end)
   (add-hook 'isearch-update-post-hook #'emacs-flash-isearch--isearch-update)
+  ;; Advice to intercept label keys
+  (advice-add 'isearch-printing-char :around
+              #'emacs-flash-isearch--printing-char-advice)
   ;; Toggle key
   (when emacs-flash-isearch-toggle-key
     (define-key isearch-mode-map (kbd emacs-flash-isearch-toggle-key)
@@ -282,6 +349,9 @@ Set to nil to disable toggle functionality."
   (remove-hook 'isearch-mode-hook #'emacs-flash-isearch--isearch-start)
   (remove-hook 'isearch-mode-end-hook #'emacs-flash-isearch--isearch-end)
   (remove-hook 'isearch-update-post-hook #'emacs-flash-isearch--isearch-update)
+  ;; Remove advice
+  (advice-remove 'isearch-printing-char
+                 #'emacs-flash-isearch--printing-char-advice)
   (when (and emacs-flash-isearch-toggle-key
              (boundp 'isearch-mode-map))
     (define-key isearch-mode-map (kbd emacs-flash-isearch-toggle-key) nil)))

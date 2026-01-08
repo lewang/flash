@@ -78,6 +78,18 @@ When nil, only labels are shown, keeping original syntax highlighting."
   :type 'boolean
   :group 'emacs-flash)
 
+(defcustom emacs-flash-label-position 'after
+  "Where to display the jump label relative to the match.
+- `after': Label appears after the match (default, like flash.nvim)
+- `before': Label appears before the match
+- `overlay': Label replaces the first character of the match
+- `eol': Label appears at end of line"
+  :type '(choice (const :tag "After match" after)
+                 (const :tag "Before match" before)
+                 (const :tag "Over first char" overlay)
+                 (const :tag "End of line" eol))
+  :group 'emacs-flash)
+
 ;;; Main Command
 
 ;;;###autoload

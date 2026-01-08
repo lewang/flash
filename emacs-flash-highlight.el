@@ -108,6 +108,7 @@ Same 10 colors as flash.nvim: red, amber, lime, green, teal, cyan, blue, violet,
 (defvar emacs-flash-backdrop)           ; defined in emacs-flash.el
 (defvar emacs-flash-rainbow)            ; defined in emacs-flash.el
 (defvar emacs-flash-highlight-matches t)  ; defined in emacs-flash.el
+(defvar emacs-flash-label-position)     ; defined in emacs-flash.el
 
 ;;; Highlight Functions
 
@@ -152,13 +153,16 @@ INDEX is used to select rainbow color when `emacs-flash-rainbow' is enabled."
          (label (emacs-flash-match-label match))
          (fold (emacs-flash-match-fold match))
          (face (when label (emacs-flash--get-label-face index)))
-         (buf (marker-buffer pos)))
+         (buf (marker-buffer pos))
+         (position (if (boundp 'emacs-flash-label-position)
+                       emacs-flash-label-position
+                     'after)))
     (when buf
       (with-current-buffer buf
         (cond
          ;; Folded: no highlighting (match is invisible)
          (fold nil)
-         ;; Normal: underline match and show label after
+         ;; Normal: underline match and show label
          (t
           (when emacs-flash-highlight-matches
             (let ((ov (make-overlay pos end-pos)))
@@ -167,12 +171,42 @@ INDEX is used to select rainbow color when `emacs-flash-rainbow' is enabled."
               (overlay-put ov 'priority 100)
               (push ov (emacs-flash-state-overlays state))))
           (when label
-            (let ((ov (make-overlay end-pos end-pos)))
-              (overlay-put ov 'after-string
-                           (propertize (char-to-string label) 'face face))
-              (overlay-put ov 'emacs-flash t)
-              (overlay-put ov 'priority 200)
-              (push ov (emacs-flash-state-overlays state))))))))))
+            (emacs-flash--add-label-overlay state pos end-pos label face position))))))))
+
+(defun emacs-flash--add-label-overlay (state pos end-pos label face position)
+  "Add label overlay to STATE at appropriate position.
+POS is match start, END-POS is match end, LABEL is the character,
+FACE is the label face, POSITION is where to place the label."
+  (let ((label-str (propertize (char-to-string label) 'face face))
+        ov)
+    (pcase position
+      ('after
+       ;; Label after match (default)
+       (setq ov (make-overlay end-pos end-pos))
+       (overlay-put ov 'after-string label-str))
+      ('before
+       ;; Label before match
+       (setq ov (make-overlay pos pos))
+       (overlay-put ov 'before-string label-str))
+      ('overlay
+       ;; Label replaces first character
+       (setq ov (make-overlay pos (1+ pos)))
+       (overlay-put ov 'display label-str))
+      ('eol
+       ;; Label at end of line
+       (save-excursion
+         (goto-char pos)
+         (let ((eol (line-end-position)))
+           (setq ov (make-overlay eol eol))
+           (overlay-put ov 'after-string
+                        (concat " " label-str)))))
+      (_
+       ;; Fallback to after
+       (setq ov (make-overlay end-pos end-pos))
+       (overlay-put ov 'after-string label-str)))
+    (overlay-put ov 'emacs-flash t)
+    (overlay-put ov 'priority 200)
+    (push ov (emacs-flash-state-overlays state))))
 
 (defun emacs-flash--get-label-face (index)
   "Get face for label at INDEX.

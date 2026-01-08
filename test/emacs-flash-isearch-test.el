@@ -148,6 +148,11 @@
   "Test that toggle-key defcustom exists."
   (should (boundp 'emacs-flash-isearch-toggle-key)))
 
+(ert-deftest emacs-flash-isearch-defcustom-trigger-test ()
+  "Test that trigger defcustom exists and defaults to nil (smart skip)."
+  (should (boundp 'emacs-flash-isearch-trigger))
+  (should (null emacs-flash-isearch-trigger)))
+
 ;;; Mode Tests
 
 (ert-deftest emacs-flash-isearch-mode-exists-test ()

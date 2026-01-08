@@ -48,17 +48,18 @@ STATE is used to check for conflicts in all search windows."
        chars))))
 
 (defun emacs-flash--label-conflicts-p (state pattern char)
-  "Check if CHAR as next input would match text after PATTERN.
-STATE provides the windows to search in."
+  "Check if CHAR as next input would match text anywhere in buffer.
+STATE provides the windows/buffers to search in.
+Like flash.nvim, searches entire buffer (not just visible area)."
   (let ((extended (concat pattern (char-to-string char))))
     (cl-some
      (lambda (win)
        (when (window-live-p win)
-         (with-selected-window win
+         (with-current-buffer (window-buffer win)
            (save-excursion
-             (goto-char (window-start win))
+             (goto-char (point-min))
              (let ((case-fold-search t))
-               (search-forward extended (window-end win t) t))))))
+               (search-forward extended nil t))))))
      (emacs-flash-state-windows state))))
 
 (defun emacs-flash--sort-by-distance (state matches)

@@ -78,13 +78,14 @@
       (should (null (emacs-flash-state-overlays state))))))
 
 (ert-deftest emacs-flash-highlight-label-test ()
-  "Test that label is displayed as after-string."
+  "Test that label is displayed as after-string (default position)."
   (with-temp-buffer
     (insert "foo bar")
     (goto-char (point-min))
     (set-window-buffer (selected-window) (current-buffer))
     (let ((state (emacs-flash-state-create (list (selected-window))))
-          (emacs-flash-backdrop nil))
+          (emacs-flash-backdrop nil)
+          (emacs-flash-label-position 'after))
       (setf (emacs-flash-state-matches state)
             (list (make-emacs-flash-match
                    :pos (copy-marker 1)
@@ -173,6 +174,88 @@ Uses same 10 colors as flash.nvim: red, amber, lime, green, teal, cyan, blue, vi
       (let ((label-ovs (seq-filter (lambda (ov) (overlay-get ov 'after-string))
                                    (emacs-flash-state-overlays state))))
         (should (= 3 (length label-ovs)))))))
+
+;;; Label Position Tests
+
+(ert-deftest emacs-flash-highlight-label-position-before-test ()
+  "Test label position 'before'."
+  (with-temp-buffer
+    (insert "foo bar")
+    (goto-char (point-min))
+    (set-window-buffer (selected-window) (current-buffer))
+    (let ((state (emacs-flash-state-create (list (selected-window))))
+          (emacs-flash-backdrop nil)
+          (emacs-flash-label-position 'before))
+      (setf (emacs-flash-state-matches state)
+            (list (make-emacs-flash-match
+                   :pos (copy-marker 1)
+                   :end-pos (copy-marker 4)
+                   :label ?x
+                   :window (selected-window)
+                   :fold nil)))
+      (emacs-flash-highlight-update state)
+      ;; Find label overlay with before-string
+      (let ((label-ov (seq-find (lambda (ov)
+                                  (overlay-get ov 'before-string))
+                                (emacs-flash-state-overlays state))))
+        (should label-ov)
+        (should (string= "x" (overlay-get label-ov 'before-string)))))))
+
+(ert-deftest emacs-flash-highlight-label-position-overlay-test ()
+  "Test label position 'overlay' (replaces first char)."
+  (with-temp-buffer
+    (insert "foo bar")
+    (goto-char (point-min))
+    (set-window-buffer (selected-window) (current-buffer))
+    (let ((state (emacs-flash-state-create (list (selected-window))))
+          (emacs-flash-backdrop nil)
+          (emacs-flash-label-position 'overlay))
+      (setf (emacs-flash-state-matches state)
+            (list (make-emacs-flash-match
+                   :pos (copy-marker 1)
+                   :end-pos (copy-marker 4)
+                   :label ?x
+                   :window (selected-window)
+                   :fold nil)))
+      (emacs-flash-highlight-update state)
+      ;; Find label overlay with display property
+      (let ((label-ov (seq-find (lambda (ov)
+                                  (overlay-get ov 'display))
+                                (emacs-flash-state-overlays state))))
+        (should label-ov)
+        (should (string= "x" (overlay-get label-ov 'display)))
+        ;; Overlay should cover exactly 1 character
+        (should (= 1 (- (overlay-end label-ov) (overlay-start label-ov))))))))
+
+(ert-deftest emacs-flash-highlight-label-position-eol-test ()
+  "Test label position 'eol' (end of line)."
+  (with-temp-buffer
+    (insert "foo bar\nbaz")
+    (goto-char (point-min))
+    (set-window-buffer (selected-window) (current-buffer))
+    (let ((state (emacs-flash-state-create (list (selected-window))))
+          (emacs-flash-backdrop nil)
+          (emacs-flash-label-position 'eol))
+      (setf (emacs-flash-state-matches state)
+            (list (make-emacs-flash-match
+                   :pos (copy-marker 1)
+                   :end-pos (copy-marker 4)
+                   :label ?x
+                   :window (selected-window)
+                   :fold nil)))
+      (emacs-flash-highlight-update state)
+      ;; Find label overlay at end of line
+      (let ((label-ov (seq-find (lambda (ov)
+                                  (and (overlay-get ov 'after-string)
+                                       (= (overlay-start ov) 8))) ; EOL position
+                                (emacs-flash-state-overlays state))))
+        (should label-ov)
+        ;; after-string should contain label (with space prefix)
+        (should (string-match-p "x" (overlay-get label-ov 'after-string)))))))
+
+(ert-deftest emacs-flash-highlight-label-position-defcustom-test ()
+  "Test that label-position defcustom exists."
+  (should (boundp 'emacs-flash-label-position)))
 
 (provide 'emacs-flash-highlight-test)
 ;;; emacs-flash-highlight-test.el ends here
