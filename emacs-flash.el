@@ -32,8 +32,6 @@
 (require 'emacs-flash-label)
 (require 'emacs-flash-highlight)
 (require 'emacs-flash-jump)
-(require 'emacs-flash-line)
-(require 'emacs-flash-word)
 
 ;;; Customization
 
