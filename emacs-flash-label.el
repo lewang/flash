@@ -64,12 +64,19 @@ Like flash.nvim, searches entire buffer (not just visible area)."
 
 (defun emacs-flash--sort-by-distance (state matches)
   "Sort MATCHES by distance from cursor position.
-STATE provides the reference position via start-point."
+STATE provides the reference position via start-point.
+Matches at cursor position are sorted last (for continue functionality)."
   (let ((pos (or (emacs-flash-state-start-point state) (point))))
     (sort (copy-sequence matches)
           (lambda (a b)
-            (< (abs (- (marker-position (emacs-flash-match-pos a)) pos))
-               (abs (- (marker-position (emacs-flash-match-pos b)) pos)))))))
+            (let ((dist-a (abs (- (marker-position (emacs-flash-match-pos a)) pos)))
+                  (dist-b (abs (- (marker-position (emacs-flash-match-pos b)) pos))))
+              ;; Matches at cursor (distance 0) go last
+              (cond
+               ((and (= dist-a 0) (= dist-b 0)) nil)
+               ((= dist-a 0) nil)  ; a goes after b
+               ((= dist-b 0) t)    ; a goes before b
+               (t (< dist-a dist-b))))))))
 
 (defun emacs-flash-find-match-by-label (state char)
   "Find match with label CHAR in STATE."
