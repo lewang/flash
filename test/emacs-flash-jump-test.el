@@ -18,7 +18,7 @@
     (let ((match (make-emacs-flash-match
                   :pos (copy-marker 5)
                   :end-pos (copy-marker 8)
-                  :label ?a
+                  :label "a"
                   :window (selected-window)
                   :fold nil)))
       (should (emacs-flash-jump-to-match match))
@@ -35,20 +35,20 @@
             (list (make-emacs-flash-match
                    :pos (copy-marker 1)
                    :end-pos (copy-marker 4)
-                   :label ?x
+                   :label "x"
                    :window (selected-window)
                    :fold nil)
                   (make-emacs-flash-match
                    :pos (copy-marker 9)
                    :end-pos (copy-marker 12)
-                   :label ?y
+                   :label "y"
                    :window (selected-window)
                    :fold nil)))
       ;; Jump to label 'y'
-      (should (emacs-flash-jump-to-label state ?y))
+      (should (emacs-flash-jump-to-label state "y"))
       (should (= 9 (point)))
       ;; Jump to label 'x'
-      (should (emacs-flash-jump-to-label state ?x))
+      (should (emacs-flash-jump-to-label state "x"))
       (should (= 1 (point))))))
 
 (ert-deftest emacs-flash-jump-to-label-not-found-test ()
@@ -61,10 +61,10 @@
             (list (make-emacs-flash-match
                    :pos (copy-marker 1)
                    :end-pos (copy-marker 4)
-                   :label ?a
+                   :label "a"
                    :window (selected-window)
                    :fold nil)))
-      (should-not (emacs-flash-jump-to-label state ?z)))))
+      (should-not (emacs-flash-jump-to-label state "z")))))
 
 (ert-deftest emacs-flash-jump-to-first-test ()
   "Test jumping to first match."
@@ -77,13 +77,13 @@
             (list (make-emacs-flash-match
                    :pos (copy-marker 5)
                    :end-pos (copy-marker 8)
-                   :label ?a
+                   :label "a"
                    :window (selected-window)
                    :fold nil)
                   (make-emacs-flash-match
                    :pos (copy-marker 9)
                    :end-pos (copy-marker 12)
-                   :label ?b
+                   :label "b"
                    :window (selected-window)
                    :fold nil)))
       (should (emacs-flash-jump-to-first state))
@@ -126,19 +126,19 @@
           (match1 (make-emacs-flash-match
                    :pos (copy-marker 1)
                    :end-pos (copy-marker 2)
-                   :label ?a
+                   :label "a"
                    :window (selected-window)
                    :fold nil))
           (match2 (make-emacs-flash-match
                    :pos (copy-marker 3)
                    :end-pos (copy-marker 4)
-                   :label ?b
+                   :label "b"
                    :window (selected-window)
                    :fold nil)))
       (setf (emacs-flash-state-matches state) (list match1 match2))
-      (should (eq match1 (emacs-flash--find-match-by-label state ?a)))
-      (should (eq match2 (emacs-flash--find-match-by-label state ?b)))
-      (should-not (emacs-flash--find-match-by-label state ?c)))))
+      (should (eq match1 (emacs-flash--find-match-by-label state "a")))
+      (should (eq match2 (emacs-flash--find-match-by-label state "b")))
+      (should-not (emacs-flash--find-match-by-label state "c")))))
 
 ;;; Jump Position Tests
 
@@ -152,7 +152,7 @@
           (match (make-emacs-flash-match
                   :pos (copy-marker 5)
                   :end-pos (copy-marker 8)
-                  :label ?a
+                  :label "a"
                   :window (selected-window)
                   :fold nil)))
       (emacs-flash-jump-to-match match)
@@ -168,7 +168,7 @@
           (match (make-emacs-flash-match
                   :pos (copy-marker 5)
                   :end-pos (copy-marker 8)
-                  :label ?a
+                  :label "a"
                   :window (selected-window)
                   :fold nil)))
       (emacs-flash-jump-to-match match)

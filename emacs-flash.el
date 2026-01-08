@@ -200,14 +200,20 @@ Returns t if jump was made, nil if cancelled."
       ;; Read input
       (redisplay t)  ; Force display update before reading
       (let* ((pattern (emacs-flash-state-pattern state))
+             (prefix (emacs-flash-state-label-prefix state))
              (match-count (length (emacs-flash-state-matches state)))
-             (prompt (emacs-flash--format-prompt pattern match-count))
-             (char (read-char prompt)))
+             (prompt (emacs-flash--format-prompt pattern match-count prefix))
+             (char (read-char prompt))
+             (char-str (char-to-string char)))
         (cond
-         ;; Escape - cancel
+         ;; Escape - cancel (or clear prefix)
          ((= char ?\e)
-          (emacs-flash-return-to-start state)
-          (throw 'emacs-flash-done nil))
+          (if prefix
+              ;; Clear prefix, go back to showing all labels
+              (setf (emacs-flash-state-label-prefix state) nil)
+            ;; No prefix, actually cancel
+            (emacs-flash-return-to-start state)
+            (throw 'emacs-flash-done nil)))
 
          ;; Enter - jump to first match
          ((= char ?\r)
@@ -215,21 +221,34 @@ Returns t if jump was made, nil if cancelled."
             (emacs-flash--do-jump state))
           (throw 'emacs-flash-done t))
 
-         ;; Backspace - delete last char
+         ;; Backspace - delete last char or clear prefix
          ((or (= char ?\C-?) (= char ?\C-h) (= char 127))
-          (when (> (length pattern) 0)
+          (cond
+           (prefix
+            ;; Clear prefix first
+            (setf (emacs-flash-state-label-prefix state) nil))
+           ((> (length pattern) 0)
+            ;; Then delete from pattern
             (setf (emacs-flash-state-pattern state)
-                  (substring pattern 0 -1))))
+                  (substring pattern 0 -1)))))
 
-         ;; Check if it's a label
-         ((emacs-flash-jump-to-label state char)
+         ;; Check if it completes a label (with current prefix)
+         ((let ((full-label (concat (or prefix "") char-str)))
+            (emacs-flash-jump-to-label state full-label))
           (emacs-flash--save-pattern state)
           (throw 'emacs-flash-done t))
 
-         ;; Add to pattern
-         (t
+         ;; Check if it's a valid label prefix (for multi-char labels)
+         ((emacs-flash--valid-label-prefix-p state char-str)
+          (setf (emacs-flash-state-label-prefix state) char-str))
+
+         ;; Add to pattern (only if no prefix active)
+         ((not prefix)
           (setf (emacs-flash-state-pattern state)
-                (concat pattern (char-to-string char)))))))))
+                (concat pattern char-str)))
+
+         ;; Invalid input with prefix - ignore or beep
+         (t (beep)))))))
 
 (defun emacs-flash--do-jump (state)
   "Perform jump to first match in STATE.
@@ -251,11 +270,23 @@ Also saves pattern and adds to search history."
         (when (featurep 'evil)
           (emacs-flash--add-to-evil-search-history pattern))))))
 
-(defun emacs-flash--format-prompt (pattern match-count)
-  "Format prompt string showing PATTERN and MATCH-COUNT."
-  (if (string-empty-p pattern)
-      "Flash: "
-    (format "Flash [%s] (%d): " pattern match-count)))
+(defun emacs-flash--format-prompt (pattern match-count &optional prefix)
+  "Format prompt string showing PATTERN, MATCH-COUNT, and optional PREFIX."
+  (let ((base (if (string-empty-p pattern)
+                  "Flash: "
+                (format "Flash [%s] (%d): " pattern match-count))))
+    (if prefix
+        (concat base prefix)
+      base)))
+
+(defun emacs-flash--valid-label-prefix-p (state prefix)
+  "Return t if PREFIX is the start of any multi-char label in STATE."
+  (cl-some (lambda (match)
+             (let ((label (emacs-flash-match-label match)))
+               (and label
+                    (> (length label) 1)
+                    (string-prefix-p prefix label))))
+           (emacs-flash-state-matches state)))
 
 ;;;###autoload
 (defun emacs-flash-jump-continue ()

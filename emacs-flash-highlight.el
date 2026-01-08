@@ -151,8 +151,13 @@ INDEX is used to select rainbow color when `emacs-flash-rainbow' is enabled."
   (let* ((pos (emacs-flash-match-pos match))
          (end-pos (emacs-flash-match-end-pos match))
          (label (emacs-flash-match-label match))
+         (prefix (emacs-flash-state-label-prefix state))
          (fold (emacs-flash-match-fold match))
-         (face (when label (emacs-flash--get-label-face index)))
+         ;; Skip labels that don't match current prefix
+         (show-label (and label
+                          (or (not prefix)
+                              (string-prefix-p prefix label))))
+         (face (when show-label (emacs-flash--get-label-face index)))
          (buf (marker-buffer pos))
          (position (if (boundp 'emacs-flash-label-position)
                        emacs-flash-label-position
@@ -170,15 +175,20 @@ INDEX is used to select rainbow color when `emacs-flash-rainbow' is enabled."
               (overlay-put ov 'emacs-flash t)
               (overlay-put ov 'priority 100)
               (push ov (emacs-flash-state-overlays state))))
-          (when label
+          (when show-label
             (emacs-flash--add-label-overlay state pos end-pos label face position))))))))
 
 (defun emacs-flash--add-label-overlay (state pos end-pos label face position)
   "Add label overlay to STATE at appropriate position.
-POS is match start, END-POS is match end, LABEL is the character,
+POS is match start, END-POS is match end, LABEL is the label string,
 FACE is the label face, POSITION is where to place the label."
-  (let ((label-str (propertize (char-to-string label) 'face face))
-        ov)
+  (let* ((prefix (emacs-flash-state-label-prefix state))
+         ;; Show remaining part of label after prefix
+         (display-label (if (and prefix (string-prefix-p prefix label))
+                            (substring label (length prefix))
+                          label))
+         (label-str (propertize display-label 'face face))
+         ov)
     (pcase position
       ('after
        ;; Label after match (default)

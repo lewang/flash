@@ -40,7 +40,7 @@
             (list (make-emacs-flash-match
                    :pos (copy-marker 1)
                    :end-pos (copy-marker 4)
-                   :label ?a
+                   :label "a"
                    :window (selected-window)
                    :fold nil)))
       ;; Update highlights
@@ -90,7 +90,7 @@
             (list (make-emacs-flash-match
                    :pos (copy-marker 1)
                    :end-pos (copy-marker 4)
-                   :label ?x
+                   :label "x"
                    :window (selected-window)
                    :fold nil)))
       (emacs-flash-highlight-update state)
@@ -160,13 +160,13 @@ Uses same 10 colors as flash.nvim: red, amber, lime, green, teal, cyan, blue, vi
       (setf (emacs-flash-state-matches state)
             (list (make-emacs-flash-match
                    :pos (copy-marker 1) :end-pos (copy-marker 4)
-                   :label ?a :window (selected-window) :fold nil)
+                   :label "a" :window (selected-window) :fold nil)
                   (make-emacs-flash-match
                    :pos (copy-marker 9) :end-pos (copy-marker 12)
-                   :label ?s :window (selected-window) :fold nil)
+                   :label "s" :window (selected-window) :fold nil)
                   (make-emacs-flash-match
                    :pos (copy-marker 17) :end-pos (copy-marker 20)
-                   :label ?d :window (selected-window) :fold nil)))
+                   :label "d" :window (selected-window) :fold nil)))
       (emacs-flash-highlight-update state)
       ;; Should have 6 overlays (3 matches + 3 labels)
       (should (= 6 (length (emacs-flash-state-overlays state))))
@@ -190,7 +190,7 @@ Uses same 10 colors as flash.nvim: red, amber, lime, green, teal, cyan, blue, vi
             (list (make-emacs-flash-match
                    :pos (copy-marker 1)
                    :end-pos (copy-marker 4)
-                   :label ?x
+                   :label "x"
                    :window (selected-window)
                    :fold nil)))
       (emacs-flash-highlight-update state)
@@ -214,7 +214,7 @@ Uses same 10 colors as flash.nvim: red, amber, lime, green, teal, cyan, blue, vi
             (list (make-emacs-flash-match
                    :pos (copy-marker 1)
                    :end-pos (copy-marker 4)
-                   :label ?x
+                   :label "x"
                    :window (selected-window)
                    :fold nil)))
       (emacs-flash-highlight-update state)
@@ -240,7 +240,7 @@ Uses same 10 colors as flash.nvim: red, amber, lime, green, teal, cyan, blue, vi
             (list (make-emacs-flash-match
                    :pos (copy-marker 1)
                    :end-pos (copy-marker 4)
-                   :label ?x
+                   :label "x"
                    :window (selected-window)
                    :fold nil)))
       (emacs-flash-highlight-update state)

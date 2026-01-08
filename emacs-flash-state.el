@@ -21,13 +21,14 @@
   (overlays nil)        ; all created overlays
   (target nil)          ; current target match
   (start-window nil)    ; original window
-  (start-point nil))    ; original point position
+  (start-point nil)     ; original point position
+  (label-prefix nil))   ; current label prefix for multi-char labels
 
 (cl-defstruct emacs-flash-match
   "A single search match."
   (pos nil)             ; start position (marker)
   (end-pos nil)         ; end position (marker)
-  (label nil)           ; assigned label (char or nil)
+  (label nil)           ; assigned label (string or nil, supports multi-char)
   (window nil)          ; window containing match
   (fold nil))           ; fold region start (or nil if not in fold)
 

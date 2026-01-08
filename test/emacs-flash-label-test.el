@@ -69,10 +69,10 @@
                    :window (selected-window)
                    :fold nil)))
       (emacs-flash-label-matches state)
-      ;; Match at pos 9 (closest to 10) should have first label 'a'
+      ;; Match at pos 9 (closest to 10) should have first label "a"
       (let ((match-at-9 (cl-find 9 (emacs-flash-state-matches state)
                                  :key (lambda (m) (marker-position (emacs-flash-match-pos m))))))
-        (should (eq ?a (emacs-flash-match-label match-at-9)))))))
+        (should (equal "a" (emacs-flash-match-label match-at-9)))))))
 
 (ert-deftest emacs-flash-label-conflict-detection-test ()
   "Test that conflicting labels are skipped."
@@ -110,25 +110,25 @@
             (list (make-emacs-flash-match
                    :pos (copy-marker 1)
                    :end-pos (copy-marker 4)
-                   :label ?x
+                   :label "x"
                    :window (selected-window)
                    :fold nil)
                   (make-emacs-flash-match
                    :pos (copy-marker 5)
                    :end-pos (copy-marker 8)
-                   :label ?y
+                   :label "y"
                    :window (selected-window)
                    :fold nil)))
       ;; Find match with label 'x'
-      (let ((match (emacs-flash-find-match-by-label state ?x)))
+      (let ((match (emacs-flash-find-match-by-label state "x")))
         (should match)
         (should (= 1 (marker-position (emacs-flash-match-pos match)))))
       ;; Find match with label 'y'
-      (let ((match (emacs-flash-find-match-by-label state ?y)))
+      (let ((match (emacs-flash-find-match-by-label state "y")))
         (should match)
         (should (= 5 (marker-position (emacs-flash-match-pos match)))))
       ;; Non-existent label returns nil
-      (should-not (emacs-flash-find-match-by-label state ?z)))))
+      (should-not (emacs-flash-find-match-by-label state "z")))))
 
 (ert-deftest emacs-flash-label-no-matches-test ()
   "Test labeling with no matches."
@@ -142,12 +142,13 @@
       (should (null (emacs-flash-state-matches state))))))
 
 (ert-deftest emacs-flash-label-more-matches-than-labels-test ()
-  "Test when there are more matches than labels."
+  "Test multi-char labels when matches exceed single-char capacity.
+With 2 label chars (a,b), we can generate 4 two-char labels (aa,ab,ba,bb)."
   (with-temp-buffer
     (insert (make-string 100 ?x))  ; 100 x's
     (goto-char (point-min))
     (set-window-buffer (selected-window) (current-buffer))
-    (let* ((emacs-flash-labels "ab")  ; Only 2 labels
+    (let* ((emacs-flash-labels "ab")  ; 2 chars = 4 two-char labels
            (state (emacs-flash-state-create (list (selected-window)))))
       ;; Create 5 matches
       (setf (emacs-flash-state-matches state)
@@ -159,10 +160,60 @@
                               :window (selected-window)
                               :fold nil)))
       (emacs-flash-label-matches state)
-      ;; Only first 2 should have labels
+      ;; 4 matches should have two-char labels (aa, ab, ba, bb)
       (let ((labeled (cl-count-if #'emacs-flash-match-label
                                   (emacs-flash-state-matches state))))
-        (should (= 2 labeled))))))
+        (should (= 4 labeled)))
+      ;; Labels should be multi-char
+      (let ((first-label (emacs-flash-match-label
+                          (car (emacs-flash-state-matches state)))))
+        (should (= 2 (length first-label)))))))
+
+(ert-deftest emacs-flash-label-prefix-matching-test ()
+  "Test prefix matching for multi-char labels."
+  (with-temp-buffer
+    (insert "test")
+    (set-window-buffer (selected-window) (current-buffer))
+    (let ((state (emacs-flash-state-create (list (selected-window)))))
+      (setf (emacs-flash-state-matches state)
+            (list (make-emacs-flash-match
+                   :pos (copy-marker 1) :end-pos (copy-marker 2)
+                   :label "aa" :window (selected-window) :fold nil)
+                  (make-emacs-flash-match
+                   :pos (copy-marker 2) :end-pos (copy-marker 3)
+                   :label "ab" :window (selected-window) :fold nil)
+                  (make-emacs-flash-match
+                   :pos (copy-marker 3) :end-pos (copy-marker 4)
+                   :label "ba" :window (selected-window) :fold nil)))
+      ;; All matches with "a" prefix
+      (let ((matches (emacs-flash-matches-with-label-prefix state "a")))
+        (should (= 2 (length matches)))  ; aa and ab
+        (should (cl-every (lambda (m)
+                            (string-prefix-p "a" (emacs-flash-match-label m)))
+                          matches)))
+      ;; All matches with "b" prefix
+      (let ((matches (emacs-flash-matches-with-label-prefix state "b")))
+        (should (= 1 (length matches)))  ; ba only
+        (should (equal "ba" (emacs-flash-match-label (car matches))))))))
+
+(ert-deftest emacs-flash-label-needs-more-chars-test ()
+  "Test detection of multi-char labels."
+  (with-temp-buffer
+    (insert "test")
+    (set-window-buffer (selected-window) (current-buffer))
+    (let ((state (emacs-flash-state-create (list (selected-window)))))
+      ;; Single-char labels
+      (setf (emacs-flash-state-matches state)
+            (list (make-emacs-flash-match
+                   :pos (copy-marker 1) :end-pos (copy-marker 2)
+                   :label "a" :window (selected-window) :fold nil)))
+      (should-not (emacs-flash-label-needs-more-chars-p state))
+      ;; Multi-char labels
+      (setf (emacs-flash-state-matches state)
+            (list (make-emacs-flash-match
+                   :pos (copy-marker 1) :end-pos (copy-marker 2)
+                   :label "aa" :window (selected-window) :fold nil)))
+      (should (emacs-flash-label-needs-more-chars-p state)))))
 
 (provide 'emacs-flash-label-test)
 ;;; emacs-flash-label-test.el ends here

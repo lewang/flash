@@ -65,16 +65,17 @@ Clears highlighting if `emacs-flash-nohlsearch' is non-nil."
              (fboundp 'evil-ex-nohighlight))
     (evil-ex-nohighlight)))
 
-(defun emacs-flash-jump-to-label (state char)
-  "Jump to match with label CHAR in STATE.
+(defun emacs-flash-jump-to-label (state label-str)
+  "Jump to match with label LABEL-STR in STATE.
 Returns t if jump successful, nil otherwise."
-  (when-let ((match (emacs-flash--find-match-by-label state char)))
+  (when-let ((match (emacs-flash--find-match-by-label state label-str)))
     (emacs-flash-jump-to-match match)))
 
-(defun emacs-flash--find-match-by-label (state char)
-  "Find match with label CHAR in STATE."
-  (cl-find char (emacs-flash-state-matches state)
-           :key #'emacs-flash-match-label))
+(defun emacs-flash--find-match-by-label (state label-str)
+  "Find match with label LABEL-STR in STATE."
+  (cl-find label-str (emacs-flash-state-matches state)
+           :key #'emacs-flash-match-label
+           :test #'equal))
 
 (defun emacs-flash-jump-to-first (state)
   "Jump to first match in STATE.
