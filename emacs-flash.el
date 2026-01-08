@@ -131,13 +131,23 @@ Set to 0 to always show labels (default)."
 
 ;;; Forward declarations for evil
 (defvar evil-ex-search-history)
+(defvar evil-search-module)
+(defvar evil-search-forward-history)
 
 (defun emacs-flash--add-to-evil-search-history (pattern)
   "Add PATTERN to evil search history.
-Adds to `evil-ex-search-history' for evil-search module."
-  (when (boundp 'evil-ex-search-history)
+Handles both `evil-search' and `isearch' modules."
+  (cond
+   ;; evil-search module uses evil-ex-search-history
+   ((and (boundp 'evil-search-module)
+         (eq evil-search-module 'evil-search)
+         (boundp 'evil-ex-search-history))
     (unless (equal pattern (car evil-ex-search-history))
-      (push pattern evil-ex-search-history))))
+      (push pattern evil-ex-search-history)))
+   ;; isearch module uses evil-search-forward-history
+   ((boundp 'evil-search-forward-history)
+    (unless (equal pattern (car evil-search-forward-history))
+      (push pattern evil-search-forward-history)))))
 
 ;;; Main Command
 
