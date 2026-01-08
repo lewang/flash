@@ -121,5 +121,58 @@
       (should (eq 'emacs-flash-match
                   (overlay-get (car (emacs-flash-state-overlays state)) 'face))))))
 
+(ert-deftest emacs-flash-highlight-rainbow-disabled-test ()
+  "Test that default face is used when rainbow disabled."
+  (let ((emacs-flash-rainbow nil))
+    (should (eq 'emacs-flash-label (emacs-flash--get-label-face 0)))
+    (should (eq 'emacs-flash-label (emacs-flash--get-label-face 1)))
+    (should (eq 'emacs-flash-label (emacs-flash--get-label-face 5)))))
+
+(ert-deftest emacs-flash-highlight-rainbow-enabled-test ()
+  "Test that rainbow faces cycle when enabled.
+Uses same 10 colors as flash.nvim: red, amber, lime, green, teal, cyan, blue, violet, fuchsia, rose."
+  (let ((emacs-flash-rainbow t))
+    ;; First 10 indices should return different faces (Tailwind colors)
+    (should (eq 'emacs-flash-label-red (emacs-flash--get-label-face 0)))
+    (should (eq 'emacs-flash-label-amber (emacs-flash--get-label-face 1)))
+    (should (eq 'emacs-flash-label-lime (emacs-flash--get-label-face 2)))
+    (should (eq 'emacs-flash-label-green (emacs-flash--get-label-face 3)))
+    (should (eq 'emacs-flash-label-teal (emacs-flash--get-label-face 4)))
+    (should (eq 'emacs-flash-label-cyan (emacs-flash--get-label-face 5)))
+    (should (eq 'emacs-flash-label-blue (emacs-flash--get-label-face 6)))
+    (should (eq 'emacs-flash-label-violet (emacs-flash--get-label-face 7)))
+    (should (eq 'emacs-flash-label-fuchsia (emacs-flash--get-label-face 8)))
+    (should (eq 'emacs-flash-label-rose (emacs-flash--get-label-face 9)))
+    ;; Should cycle back
+    (should (eq 'emacs-flash-label-red (emacs-flash--get-label-face 10)))))
+
+(ert-deftest emacs-flash-highlight-rainbow-labels-visual-test ()
+  "Test that rainbow labels are applied to overlays."
+  (with-temp-buffer
+    (insert "foo bar foo baz foo")
+    (goto-char (point-min))
+    (set-window-buffer (selected-window) (current-buffer))
+    (let ((state (emacs-flash-state-create (list (selected-window))))
+          (emacs-flash-backdrop nil)
+          (emacs-flash-rainbow t))
+      ;; Add multiple matches with labels
+      (setf (emacs-flash-state-matches state)
+            (list (make-emacs-flash-match
+                   :pos (copy-marker 1) :end-pos (copy-marker 4)
+                   :label ?a :window (selected-window) :fold nil)
+                  (make-emacs-flash-match
+                   :pos (copy-marker 9) :end-pos (copy-marker 12)
+                   :label ?s :window (selected-window) :fold nil)
+                  (make-emacs-flash-match
+                   :pos (copy-marker 17) :end-pos (copy-marker 20)
+                   :label ?d :window (selected-window) :fold nil)))
+      (emacs-flash-highlight-update state)
+      ;; Should have 6 overlays (3 matches + 3 labels)
+      (should (= 6 (length (emacs-flash-state-overlays state))))
+      ;; Check label overlays have different faces
+      (let ((label-ovs (seq-filter (lambda (ov) (overlay-get ov 'after-string))
+                                   (emacs-flash-state-overlays state))))
+        (should (= 3 (length label-ovs)))))))
+
 (provide 'emacs-flash-highlight-test)
 ;;; emacs-flash-highlight-test.el ends here

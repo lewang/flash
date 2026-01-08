@@ -66,6 +66,18 @@ Earlier characters are assigned to closer matches."
   :type 'boolean
   :group 'emacs-flash)
 
+(defcustom emacs-flash-rainbow nil
+  "When non-nil, use different colors for each label.
+Makes labels more visually distinct."
+  :type 'boolean
+  :group 'emacs-flash)
+
+(defcustom emacs-flash-highlight-matches t
+  "When non-nil, highlight matched text.
+When nil, only labels are shown, keeping original syntax highlighting."
+  :type 'boolean
+  :group 'emacs-flash)
+
 ;;; Main Command
 
 ;;;###autoload

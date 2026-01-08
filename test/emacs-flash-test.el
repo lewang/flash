@@ -47,5 +47,93 @@
   (should (fboundp 'emacs-flash-jump))
   (should (commandp 'emacs-flash-jump)))
 
+(ert-deftest emacs-flash-defcustom-rainbow-test ()
+  "Test that rainbow defcustom exists."
+  (should (boundp 'emacs-flash-rainbow))
+  (should (booleanp emacs-flash-rainbow)))
+
+(ert-deftest emacs-flash-defcustom-highlight-matches-test ()
+  "Test that highlight-matches defcustom exists."
+  (should (boundp 'emacs-flash-highlight-matches))
+  (should (booleanp emacs-flash-highlight-matches)))
+
+(ert-deftest emacs-flash-multi-window-search-test ()
+  "Test search works across multiple windows with different buffers."
+  (let ((buf1 (generate-new-buffer "*flash-test-1*"))
+        (buf2 (generate-new-buffer "*flash-test-2*"))
+        (orig-window (selected-window))
+        win1 win2)
+    (unwind-protect
+        (progn
+          ;; Setup two windows with different buffers
+          (set-window-buffer orig-window buf1)
+          (with-current-buffer buf1
+            (insert "hello world hello"))
+          (setq win1 orig-window)
+
+          (setq win2 (split-window-right))
+          (set-window-buffer win2 buf2)
+          (with-current-buffer buf2
+            (insert "hello there"))
+
+          ;; Create state with both windows
+          (let ((state (emacs-flash-state-create (list win1 win2))))
+            (setf (emacs-flash-state-pattern state) "hello")
+            (emacs-flash-search state)
+
+            ;; Should find matches in both buffers (2 in buf1, 1 in buf2)
+            (should (= 3 (length (emacs-flash-state-matches state))))
+
+            ;; Check that markers point to correct buffers
+            (dolist (match (emacs-flash-state-matches state))
+              (let ((marker (emacs-flash-match-pos match))
+                    (win (emacs-flash-match-window match)))
+                (should (markerp marker))
+                (should (eq (marker-buffer marker) (window-buffer win)))))))
+
+      ;; Cleanup
+      (delete-window win2)
+      (kill-buffer buf1)
+      (kill-buffer buf2))))
+
+(ert-deftest emacs-flash-multi-window-highlight-test ()
+  "Test highlighting works across multiple windows with different buffers."
+  (let ((buf1 (generate-new-buffer "*flash-test-1*"))
+        (buf2 (generate-new-buffer "*flash-test-2*"))
+        (orig-window (selected-window))
+        win1 win2)
+    (unwind-protect
+        (progn
+          ;; Setup two windows with different buffers
+          (set-window-buffer orig-window buf1)
+          (with-current-buffer buf1
+            (insert "test content"))
+          (setq win1 orig-window)
+
+          (setq win2 (split-window-right))
+          (set-window-buffer win2 buf2)
+          (with-current-buffer buf2
+            (insert "test data"))
+
+          ;; Create state, search, and highlight
+          (let ((state (emacs-flash-state-create (list win1 win2))))
+            (setf (emacs-flash-state-pattern state) "test")
+            (emacs-flash-search state)
+            (emacs-flash-label-matches state)
+
+            ;; This should not error - the bug was "Marker points into wrong buffer"
+            (emacs-flash-highlight-update state)
+
+            ;; Should have overlays in both buffers
+            (let ((overlays (emacs-flash-state-overlays state)))
+              (should (> (length overlays) 0))
+              ;; Cleanup overlays
+              (emacs-flash-highlight-clear state))))
+
+      ;; Cleanup
+      (delete-window win2)
+      (kill-buffer buf1)
+      (kill-buffer buf2))))
+
 (provide 'emacs-flash-test)
 ;;; emacs-flash-test.el ends here

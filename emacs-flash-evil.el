@@ -19,6 +19,7 @@
 
 (require 'evil)
 (require 'emacs-flash)
+(require 'emacs-flash-char)
 
 ;;; Evil Motion
 
@@ -77,15 +78,19 @@ In visual mode: extends selection to target."
 ;;; Setup function
 
 ;;;###autoload
-(defun emacs-flash-evil-setup ()
+(defun emacs-flash-evil-setup (&optional char-motions)
   "Set up evil keybindings for emacs-flash.
-Binds 'gs' in normal, visual, motion, and operator states."
-  (interactive)
+Binds 'gs' in normal, visual, motion, and operator states.
+When CHAR-MOTIONS is non-nil, also replace f/t/F/T with flash versions."
+  (interactive "P")
   (evil-global-set-key 'normal (kbd "g s") #'emacs-flash-evil-jump)
   (evil-global-set-key 'visual (kbd "g s") #'emacs-flash-evil-jump)
   (evil-global-set-key 'motion (kbd "g s") #'emacs-flash-evil-jump)
   (evil-global-set-key 'operator (kbd "g s") #'emacs-flash-evil-jump)
-  (message "emacs-flash-evil: bound 'gs' to flash jump"))
+  (when char-motions
+    (emacs-flash-char-setup-evil-keys))
+  (message "emacs-flash-evil: bound 'gs' to flash jump%s"
+           (if char-motions ", f/t/F/T to flash char" "")))
 
 (provide 'emacs-flash-evil)
 ;;; emacs-flash-evil.el ends here

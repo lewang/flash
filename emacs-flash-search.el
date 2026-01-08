@@ -11,12 +11,16 @@
 
 (require 'emacs-flash-state)
 
+(defvar emacs-flash-case-fold)  ; defined in emacs-flash.el
+
 (defun emacs-flash-search (state)
   "Find all matches for STATE pattern in all windows.
 Updates STATE matches field with found matches."
   (let ((pattern (emacs-flash-state-pattern state))
         (windows (emacs-flash-state-windows state))
-        (case-fold-search t)  ; case-insensitive by default
+        (case-fold-search (if (boundp 'emacs-flash-case-fold)
+                              emacs-flash-case-fold
+                            t))
         matches)
     (when (> (length pattern) 0)
       (dolist (win windows)
@@ -38,9 +42,26 @@ Updates STATE matches field with found matches."
     (setf (emacs-flash-state-matches state) (nreverse matches))))
 
 (defun emacs-flash--get-fold-at (pos)
-  "Return fold start position if POS is in invisible region, nil otherwise."
+  "Return fold line start position if POS is in invisible/folded region, nil otherwise.
+Works with both text properties and overlays (like hideshow)."
   (when (invisible-p pos)
-    (previous-single-property-change (1+ pos) 'invisible nil (point-min))))
+    ;; Find the overlay or text property that makes this position invisible
+    (let ((fold-start nil))
+      ;; First check overlays (used by hideshow, outline, etc.)
+      (dolist (ov (overlays-at pos))
+        (when (overlay-get ov 'invisible)
+          (setq fold-start (overlay-start ov))))
+      ;; Fallback to text property
+      (unless fold-start
+        (setq fold-start (previous-single-property-change (1+ pos) 'invisible nil (point-min))))
+      ;; Return beginning of line before/at fold start
+      (when fold-start
+        (save-excursion
+          (goto-char fold-start)
+          ;; Go to previous line if fold-start is at beginning of line
+          (when (bolp)
+            (forward-line -1))
+          (line-beginning-position))))))
 
 (provide 'emacs-flash-search)
 ;;; emacs-flash-search.el ends here
