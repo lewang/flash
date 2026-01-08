@@ -58,6 +58,12 @@ M-x load-file RET emacs-flash.el RET
 
 **Rule**: Every module must have tests. All tests must pass before moving to next phase.
 
+## Working Style
+
+- **Always make changes yourself** — don't ask the user to edit code
+- **Always run and test code yourself** — use batch Emacs to run tests
+- **Only ask user to verify** when you absolutely cannot test it yourself (e.g., interactive UI behavior)
+
 ## Design Decisions
 
 - **Overlays** for all visual feedback (not text properties)
