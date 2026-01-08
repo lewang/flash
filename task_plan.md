@@ -68,11 +68,17 @@
     - Приоритет: высокий
   - [-] 8.2 Line mode — НЕ НУЖЕН (в flash.nvim это пример конфигурации, не отдельный режим)
   - [-] 8.3 Word mode — НЕ НУЖЕН (в flash.nvim это пример конфигурации, не отдельный режим)
-  - [ ] 8.4 Remote mode — операции без перемещения курсора
+  - [ ] 8.4 Search modes — режимы поиска как в flash.nvim
+    - `exact` — точное совпадение (текущее поведение, default)
+    - `search` — regex поиск (Emacs regexp)
+    - `fuzzy` — fuzzy match
+    - `function` — кастомная функция преобразования паттерна
+    - Приоритет: высокий (позволяет line/word jump через конфигурацию)
+  - [ ] 8.5 Remote mode — операции без перемещения курсора
     - yr/dr/cr — yank/delete/change remote
     - После операции курсор остаётся на месте
     - Приоритет: низкий (workaround: jump + C-o)
-  - [ ] 8.5 Treesitter mode — прыжок к узлам treesitter
+  - [ ] 8.6 Treesitter mode — прыжок к узлам treesitter
     - Функции, классы, блоки, аргументы
     - Требует treesitter-интеграцию
     - Приоритет: низкий
