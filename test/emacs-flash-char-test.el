@@ -221,5 +221,22 @@ Sequence: fa → ; → \\ → ; should continue forward."
   (should (boundp 'emacs-flash-char-multi-line))
   (should (booleanp emacs-flash-char-multi-line)))
 
+(ert-deftest emacs-flash-char-defcustom-reserved-labels-test ()
+  "Test that reserved-labels defcustom exists."
+  (should (boundp 'emacs-flash-char-reserved-labels))
+  (should (stringp emacs-flash-char-reserved-labels)))
+
+(ert-deftest emacs-flash-char-filtered-labels-test ()
+  "Test that reserved labels are filtered out."
+  (let ((emacs-flash-labels "asdfgh")
+        (emacs-flash-char-reserved-labels "ai"))
+    (let ((filtered (emacs-flash-char--filtered-labels)))
+      ;; 'a' and 'i' should be removed (but 'i' not in labels anyway)
+      (should-not (string-match-p "a" filtered))
+      ;; 's', 'd', 'f', 'g', 'h' should remain
+      (should (string-match-p "s" filtered))
+      (should (string-match-p "d" filtered))
+      (should (= 5 (length filtered))))))
+
 (provide 'emacs-flash-char-test)
 ;;; emacs-flash-char-test.el ends here

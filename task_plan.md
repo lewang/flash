@@ -68,20 +68,16 @@
     - Приоритет: высокий
   - [-] 8.2 Line mode — НЕ НУЖЕН (в flash.nvim это пример конфигурации, не отдельный режим)
   - [-] 8.3 Word mode — НЕ НУЖЕН (в flash.nvim это пример конфигурации, не отдельный режим)
-  - [ ] 8.4 Search modes — режимы поиска как в flash.nvim
-    - `exact` — точное совпадение (текущее поведение, default)
-    - `search` — regex поиск (Emacs regexp)
-    - `fuzzy` — fuzzy match
-    - `function` — кастомная функция преобразования паттерна
-    - Приоритет: высокий (позволяет line/word jump через конфигурацию)
-  - [ ] 8.5 Remote mode — операции без перемещения курсора
+  - [-] 8.4 Search modes — УДАЛЕНО (не нужен, усложняет код без пользы)
+  - [x] 8.5 Remote mode — операции без перемещения курсора
     - yr/dr/cr — yank/delete/change remote
     - После операции курсор остаётся на месте
-    - Приоритет: низкий (workaround: jump + C-o)
-  - [ ] 8.6 Treesitter mode — прыжок к узлам treesitter
+    - Интеграция с evil через `emacs-flash-evil-setup`
+  - [x] 8.6 Treesitter mode — прыжок к узлам treesitter
     - Функции, классы, блоки, аргументы
-    - Требует treesitter-интеграцию
-    - Приоритет: низкий
+    - Требует Emacs 29+ с treesitter
+    - `emacs-flash-treesitter` — показать метки для узлов в точке
+    - `emacs-flash-treesitter-evil` — с evil visual selection
 
 ## Blocked / Open Questions
 (все решены)
@@ -97,16 +93,34 @@
 - [Тесты]: ERT тесты для каждого модуля, все тесты должны проходить
 
 ## Status
-**Phase 8.1 завершена** — 62 теста проходят
+**Phase 8 завершена** — 101 базовый тест + 10 evil тестов проходят
 
 **Примеры тестирования:** examples.md обновлён (сценарии 19-27)
 
-**Следующий этап:** Phase 8.4 (Remote mode) или Phase 5 (документация)
+**Следующий этап:** Phase 5 (документация и подготовка к MELPA)
 
 **Примечание:** Line mode и Word mode удалены — в flash.nvim это не отдельные режимы,
 а примеры конфигурации `flash.jump()` с кастомным паттерном.
 
 ### Новые возможности:
+
+**Phase 8.6:**
+- Treesitter mode — выбор узлов treesitter с метками
+- `emacs-flash-treesitter` — показать метки для узла в точке и всех родителей
+- `emacs-flash-treesitter-evil` — с evil visual mode selection
+- Метки от внутреннего узла к внешнему (a, s, d, ...)
+- Нажатие метки выделяет весь узел (функцию, класс, блок и т.д.)
+- Требует Emacs 29+ с treesitter поддержкой
+- `emacs-flash-treesitter-max-depth` — максимальная глубина родителей (default: 10)
+
+**Phase 8.5:**
+- Remote mode — операции на удалённой позиции без перемещения курсора
+- `emacs-flash-evil-remote` — evil motion для remote операций
+- Использование: `yr{pattern}{label}` — yank удалённый текст
+- Использование: `dr{pattern}{label}` — delete удалённый текст
+- Использование: `cr{pattern}{label}` — change удалённый текст
+- После операции курсор автоматически возвращается на исходную позицию
+- Активация через `(emacs-flash-evil-setup)` — биндит 'r' в operator state
 
 **Phase 8.1:**
 - Multi-char labels — двухсимвольные метки (aa, as, ad...)

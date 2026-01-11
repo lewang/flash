@@ -11,7 +11,7 @@
 
 (require 'emacs-flash-state)
 
-(defvar emacs-flash-case-fold)  ; defined in emacs-flash.el
+(defvar emacs-flash-case-fold)    ; defined in emacs-flash.el
 
 (defun emacs-flash-search (state)
   "Find all matches for STATE pattern in all windows.

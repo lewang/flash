@@ -114,8 +114,8 @@
              (label (emacs-flash-match-label second-match))
              (expected-pos (marker-position (emacs-flash-match-pos second-match))))
         (when label
-          ;; Try jump (sets pending match)
-          (emacs-flash-isearch--try-jump label)
+          ;; Try jump (sets pending match) - pass char, not string
+          (emacs-flash-isearch--try-jump (string-to-char label))
           ;; Simulate search exit - do pending jump
           (emacs-flash-isearch--do-pending-jump)
           ;; Should be at second match position

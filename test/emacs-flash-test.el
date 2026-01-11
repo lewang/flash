@@ -57,6 +57,11 @@
   (should (boundp 'emacs-flash-highlight-matches))
   (should (booleanp emacs-flash-highlight-matches)))
 
+(ert-deftest emacs-flash-defcustom-multi-char-labels-test ()
+  "Test that multi-char-labels defcustom exists."
+  (should (boundp 'emacs-flash-multi-char-labels))
+  (should (booleanp emacs-flash-multi-char-labels)))
+
 ;;; Phase 7 defcustom tests
 
 (ert-deftest emacs-flash-defcustom-jumplist-test ()

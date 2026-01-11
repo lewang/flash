@@ -34,6 +34,14 @@ When nil, only search on current line (like standard Vim behavior)."
   :type 'boolean
   :group 'emacs-flash-char)
 
+(defcustom emacs-flash-char-reserved-labels ""
+  "Characters that should NOT be used as labels in char motions.
+These are typically evil/vim editing commands that users want to
+execute immediately after f/t/F/T without interference from labels.
+Example: \"aisoAISO;,cCxr\" to reserve insert/edit commands."
+  :type 'string
+  :group 'emacs-flash-char)
+
 ;;; State Variables
 
 (defvar emacs-flash-char--last-motion nil
@@ -48,7 +56,17 @@ When nil, only search on current line (like standard Vim behavior)."
 ;;; Forward declarations for evil compatibility
 (defvar evil-last-find)
 (defvar evil-motion-state-map)
+(defvar emacs-flash-labels)  ; defined in emacs-flash.el
 (declare-function evil-define-motion "evil-macros")
+
+;;; Helper Functions
+
+(defun emacs-flash-char--filtered-labels ()
+  "Return `emacs-flash-labels' with reserved chars removed."
+  (let ((reserved (string-to-list emacs-flash-char-reserved-labels)))
+    (apply #'string
+           (cl-remove-if (lambda (c) (memq c reserved))
+                         (string-to-list emacs-flash-labels)))))
 
 ;;; Core Search Function
 
@@ -98,8 +116,9 @@ Returns t if jump was made, nil if cancelled."
          jumped)
     (setf (emacs-flash-state-matches state) matches)
     (setf (emacs-flash-state-pattern state) "")
-    ;; Assign labels
-    (emacs-flash-label-matches state)
+    ;; Assign labels (excluding reserved chars)
+    (let ((emacs-flash-labels (emacs-flash-char--filtered-labels)))
+      (emacs-flash-label-matches state))
     ;; Show highlights
     (emacs-flash-highlight-update state)
     (unwind-protect
@@ -110,8 +129,10 @@ Returns t if jump was made, nil if cancelled."
             (setq jumped nil))
            ;; Label selected
            (t
-            (when-let ((match (cl-find char (emacs-flash-state-matches state)
-                                       :key #'emacs-flash-match-label)))
+            (when-let ((match (cl-find (char-to-string char)
+                                       (emacs-flash-state-matches state)
+                                       :key #'emacs-flash-match-label
+                                       :test #'equal)))
               (goto-char (marker-position (emacs-flash-match-pos match)))
               (when adjust-fn (funcall adjust-fn))
               (setq jumped t)))))
@@ -127,8 +148,9 @@ ADJUST-FN is called on final position for t/T motions."
   (let* ((state (emacs-flash-state-create (list (selected-window)))))
     (setf (emacs-flash-state-matches state) matches)
     (setf (emacs-flash-state-pattern state) "")
-    ;; Assign labels
-    (emacs-flash-label-matches state)
+    ;; Assign labels (excluding reserved chars)
+    (let ((emacs-flash-labels (emacs-flash-char--filtered-labels)))
+      (emacs-flash-label-matches state))
     ;; Show highlights
     (emacs-flash-highlight-update state)
     (unwind-protect
@@ -138,8 +160,10 @@ ADJUST-FN is called on final position for t/T motions."
            ((or (= char ?\e) (< char 32))
             nil)
            ;; Label selected - jump to it
-           ((when-let ((match (cl-find char (emacs-flash-state-matches state)
-                                        :key #'emacs-flash-match-label)))
+           ((when-let ((match (cl-find (char-to-string char)
+                                       (emacs-flash-state-matches state)
+                                       :key #'emacs-flash-match-label
+                                       :test #'equal)))
               (goto-char (marker-position (emacs-flash-match-pos match)))
               (when adjust-fn (funcall adjust-fn))
               t))

@@ -149,6 +149,7 @@ With 2 label chars (a,b), we can generate 4 two-char labels (aa,ab,ba,bb)."
     (goto-char (point-min))
     (set-window-buffer (selected-window) (current-buffer))
     (let* ((emacs-flash-labels "ab")  ; 2 chars = 4 two-char labels
+           (emacs-flash-multi-char-labels t)  ; enabled
            (state (emacs-flash-state-create (list (selected-window)))))
       ;; Create 5 matches
       (setf (emacs-flash-state-matches state)
@@ -168,6 +169,35 @@ With 2 label chars (a,b), we can generate 4 two-char labels (aa,ab,ba,bb)."
       (let ((first-label (emacs-flash-match-label
                           (car (emacs-flash-state-matches state)))))
         (should (= 2 (length first-label)))))))
+
+(ert-deftest emacs-flash-label-single-char-only-test ()
+  "Test that multi-char labels are disabled when emacs-flash-multi-char-labels is nil.
+With 2 label chars (a,b) and 5 matches, only 2 should get labels."
+  (with-temp-buffer
+    (insert (make-string 100 ?x))  ; 100 x's
+    (goto-char (point-min))
+    (set-window-buffer (selected-window) (current-buffer))
+    (let* ((emacs-flash-labels "ab")  ; 2 chars
+           (emacs-flash-multi-char-labels nil)  ; disabled
+           (state (emacs-flash-state-create (list (selected-window)))))
+      ;; Create 5 matches
+      (setf (emacs-flash-state-matches state)
+            (cl-loop for i from 1 to 5
+                     collect (make-emacs-flash-match
+                              :pos (copy-marker (* i 10))
+                              :end-pos (copy-marker (1+ (* i 10)))
+                              :label nil
+                              :window (selected-window)
+                              :fold nil)))
+      (emacs-flash-label-matches state)
+      ;; Only 2 matches should have labels (single-char only)
+      (let ((labeled (cl-count-if #'emacs-flash-match-label
+                                  (emacs-flash-state-matches state))))
+        (should (= 2 labeled)))
+      ;; Labels should be single-char
+      (let ((first-label (emacs-flash-match-label
+                          (car (emacs-flash-state-matches state)))))
+        (should (= 1 (length first-label)))))))
 
 (ert-deftest emacs-flash-label-prefix-matching-test ()
   "Test prefix matching for multi-char labels."

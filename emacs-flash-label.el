@@ -16,6 +16,7 @@
 ;;; Configuration (set by emacs-flash.el)
 
 (defvar emacs-flash-labels)  ; defined in emacs-flash.el
+(defvar emacs-flash-multi-char-labels)  ; defined in emacs-flash.el
 
 ;;; Label Functions
 
@@ -39,24 +40,30 @@ Uses multi-char labels when matches exceed available single-char labels."
 
 (defun emacs-flash--generate-labels (chars count)
   "Generate COUNT labels from CHARS.
-Returns list of strings. Uses single chars when possible,
-multi-char labels (aa, as, ad, ...) when COUNT > (length CHARS)."
+Returns list of strings. Uses single chars when possible.
+When `emacs-flash-multi-char-labels' is non-nil and COUNT > (length CHARS),
+generates multi-char labels (aa, as, ad, ...).
+When `emacs-flash-multi-char-labels' is nil, excess matches remain unlabeled."
   (let ((n (length chars)))
     (if (<= count n)
         ;; Single char labels
         (mapcar #'char-to-string (cl-subseq chars 0 count))
-      ;; Multi-char labels needed
-      (let ((labels nil)
-            (needed count))
-        ;; Generate two-char combinations
-        (catch 'done
-          (dolist (c1 chars)
-            (dolist (c2 chars)
-              (push (string c1 c2) labels)
-              (cl-decf needed)
-              (when (<= needed 0)
-                (throw 'done nil)))))
-        (nreverse labels)))))
+      ;; More matches than single chars
+      (if emacs-flash-multi-char-labels
+          ;; Multi-char labels enabled
+          (let ((labels nil)
+                (needed count))
+            ;; Generate two-char combinations
+            (catch 'done
+              (dolist (c1 chars)
+                (dolist (c2 chars)
+                  (push (string c1 c2) labels)
+                  (cl-decf needed)
+                  (when (<= needed 0)
+                    (throw 'done nil)))))
+            (nreverse labels))
+        ;; Multi-char disabled - only use available single chars
+        (mapcar #'char-to-string chars)))))
 
 (defun emacs-flash--available-labels (state pattern)
   "Return labels that won't conflict with PATTERN continuation.

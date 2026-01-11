@@ -153,7 +153,7 @@ When set (e.g. \";\"), you must type trigger + label to jump."
   (when (and emacs-flash-isearch--active
              emacs-flash-isearch--state)
     (let ((match (emacs-flash-find-match-by-label
-                  emacs-flash-isearch--state char)))
+                  emacs-flash-isearch--state (char-to-string char))))
       (when match
         ;; Save match for jumping after minibuffer exits
         (setq emacs-flash-isearch--pending-match match)
@@ -218,9 +218,9 @@ Without trigger: any label char jumps (only when multiple matches)."
       (minibuffer-message " [label?]")
       ;; Consume the trigger - don't add to search pattern
       (setq this-command 'ignore))
-     ;; No trigger configured - old behavior (jump on label, only with multiple matches)
+     ;; No trigger configured - try jump if label matches
      ((and (null emacs-flash-isearch-trigger)
-           (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 1))
+           (emacs-flash-state-matches emacs-flash-isearch--state))
       (when (emacs-flash-isearch--try-jump last-command-event)
         (exit-minibuffer))))))
 
@@ -319,9 +319,9 @@ ORIG-FUN is the original function, ARGS are passed through."
              (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 0))
         (setq emacs-flash-isearch--label-mode t)
         (message "[label?]"))
-       ;; No trigger configured - try jump on label (only with multiple matches)
+       ;; No trigger configured - try jump if label matches
        ((and (null emacs-flash-isearch-trigger)
-             (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 1))
+             (emacs-flash-state-matches emacs-flash-isearch--state))
         (if (emacs-flash-isearch--try-jump last-command-event)
             (isearch-exit)
           ;; Not a valid label, continue with normal input

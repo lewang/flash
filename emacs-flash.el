@@ -46,6 +46,13 @@ Earlier characters are assigned to closer matches."
   :type 'string
   :group 'emacs-flash)
 
+(defcustom emacs-flash-multi-char-labels nil
+  "When non-nil, use multi-character labels (aa, as, ad...) when needed.
+Multi-char labels are used when matches exceed available single-char labels.
+When nil, only single-character labels are used and excess matches are unlabeled."
+  :type 'boolean
+  :group 'emacs-flash)
+
 (defcustom emacs-flash-multi-window t
   "When non-nil, search in all visible windows."
   :type 'boolean
@@ -306,6 +313,12 @@ If no previous pattern exists, starts a new search."
           (emacs-flash--loop state)
         (emacs-flash-highlight-clear state)
         (emacs-flash-state-cleanup state)))))
+
+;;; Optional modules
+
+;; Treesitter mode (Emacs 29+)
+(when (>= emacs-major-version 29)
+  (require 'emacs-flash-treesitter nil t))
 
 (provide 'emacs-flash)
 ;;; emacs-flash.el ends here
