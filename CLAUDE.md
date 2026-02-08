@@ -4,37 +4,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-emacs-flash is an Emacs package implementing flash.nvim-style navigation — quick jumps using labels assigned to search matches. Key differentiator from avy: incremental input with automatic skipping of conflicting labels.
+flash is an Emacs package implementing flash.nvim-style navigation — quick jumps using labels assigned to search matches. Key differentiator from avy: incremental input with automatic skipping of conflicting labels.
 
 ## Architecture
 
 Six modules with clear separation:
 
 ```
-emacs-flash.el           # Entry point, main loop, public API
-emacs-flash-state.el     # Session state (pattern, matches, overlays)
-emacs-flash-search.el    # Find matches in visible windows
-emacs-flash-label.el     # Smart label assignment (skip conflicts)
-emacs-flash-highlight.el # Overlays for backdrop, matches, labels
-emacs-flash-jump.el      # Jump logic, window switching
-emacs-flash-evil.el      # Evil-mode integration
+flash.el           # Entry point, main loop, public API
+flash-state.el     # Session state (pattern, matches, overlays)
+flash-search.el    # Find matches in visible windows
+flash-label.el     # Smart label assignment (skip conflicts)
+flash-highlight.el # Overlays for backdrop, matches, labels
+flash-jump.el      # Jump logic, window switching
+flash-evil.el      # Evil-mode integration
 ```
 
 ### Key Data Structures
 
 ```elisp
 ;; Session state
-(cl-defstruct emacs-flash-state
+(cl-defstruct flash-state
   pattern matches windows overlays target start-window start-point)
 
 ;; Single match
-(cl-defstruct emacs-flash-match
+(cl-defstruct flash-match
   pos end-pos label window fold)
 ```
 
 ### Core Flow
 
-1. `emacs-flash-jump` creates state
+1. `flash-jump` creates state
 2. Loop: search → label → highlight → read input
 3. Input is either: label (jump), pattern char (extend search), or control (ESC/RET/backspace)
 4. Cleanup overlays on exit
@@ -44,16 +44,16 @@ emacs-flash-evil.el      # Evil-mode integration
 ```bash
 # Run all tests
 emacs -Q -batch -L . -L test -l ert \
-  -l emacs-flash-state-test.el \
-  -l emacs-flash-search-test.el \
-  -l emacs-flash -l emacs-flash-highlight-test.el \
-  -l emacs-flash-label-test.el \
-  -l emacs-flash-jump-test.el \
-  -l emacs-flash-test.el \
+  -l flash-state-test.el \
+  -l flash-search-test.el \
+  -l flash -l flash-highlight-test.el \
+  -l flash-label-test.el \
+  -l flash-jump-test.el \
+  -l flash-test.el \
   -f ert-run-tests-batch-and-exit
 
 # Load in running Emacs for testing
-M-x load-file RET emacs-flash.el RET
+M-x load-file RET flash.el RET
 ```
 
 **Rule**: Every module must have tests. All tests must pass before moving to next phase.
@@ -115,7 +115,7 @@ if vim.fn.foldclosed(line) ~= -1 then vim.cmd("normal! zO") end
 
 **Solution:** Разные настройки для светлой/тёмной темы:
 ```elisp
-(defface emacs-flash-label-red
+(defface flash-label-red
   '((((background dark))
      :inherit font-lock-warning-face :inverse-video t)
     (((background light))
@@ -129,7 +129,7 @@ if vim.fn.foldclosed(line) ~= -1 then vim.cmd("normal! zO") end
 
 **Problem:** Пользователь хотел видеть оригинальный синтаксис, без оранжевой подсветки "def".
 
-**Solution:** Добавлен `emacs-flash-highlight-matches` (defcustom, default t).
+**Solution:** Добавлен `flash-highlight-matches` (defcustom, default t).
 Когда nil — только метки показываются, совпадения не подсвечиваются.
 
 ### evil + undo-tree: "Enable global-undo-tree-mode"

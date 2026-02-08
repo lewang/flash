@@ -1,4 +1,4 @@
-;;; emacs-flash-state.el --- State management for emacs-flash -*- lexical-binding: t -*-
+;;; flash-state.el --- State management for flash -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 ;; Author: chestnykh
@@ -13,10 +13,10 @@
 
 ;;; Data Structures
 
-(cl-defstruct emacs-flash-state
+(cl-defstruct flash-state
   "State of a flash jump session."
   (pattern "")          ; current search pattern (string)
-  (matches nil)         ; list of emacs-flash-match
+  (matches nil)         ; list of flash-match
   (windows nil)         ; windows to search in
   (overlays nil)        ; all created overlays
   (target nil)          ; current target match
@@ -25,7 +25,7 @@
   (label-prefix nil)    ; current label prefix for multi-char labels
   (whole-buffer nil))   ; when t, check label conflicts in whole buffer (for search integration)
 
-(cl-defstruct emacs-flash-match
+(cl-defstruct flash-match
   "A single search match."
   (pos nil)             ; start position (marker)
   (end-pos nil)         ; end position (marker)
@@ -35,11 +35,11 @@
 
 ;;; State Management
 
-(defun emacs-flash-state-create (&optional windows)
+(defun flash-state-create (&optional windows)
   "Create new flash state.
 WINDOWS is a list of windows to search in.
 If nil, uses current window only."
-  (make-emacs-flash-state
+  (make-flash-state
    :pattern ""
    :matches nil
    :windows (or windows (list (selected-window)))
@@ -48,15 +48,15 @@ If nil, uses current window only."
    :start-window (selected-window)
    :start-point (point)))
 
-(defun emacs-flash-state-cleanup (state)
+(defun flash-state-cleanup (state)
   "Clean up STATE: delete overlays and release markers."
-  (mapc #'delete-overlay (emacs-flash-state-overlays state))
-  (setf (emacs-flash-state-overlays state) nil)
-  (dolist (m (emacs-flash-state-matches state))
-    (when (markerp (emacs-flash-match-pos m))
-      (set-marker (emacs-flash-match-pos m) nil))
-    (when (markerp (emacs-flash-match-end-pos m))
-      (set-marker (emacs-flash-match-end-pos m) nil))))
+  (mapc #'delete-overlay (flash-state-overlays state))
+  (setf (flash-state-overlays state) nil)
+  (dolist (m (flash-state-matches state))
+    (when (markerp (flash-match-pos m))
+      (set-marker (flash-match-pos m) nil))
+    (when (markerp (flash-match-end-pos m))
+      (set-marker (flash-match-end-pos m) nil))))
 
-(provide 'emacs-flash-state)
-;;; emacs-flash-state.el ends here
+(provide 'flash-state)
+;;; flash-state.el ends here

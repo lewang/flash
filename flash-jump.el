@@ -1,4 +1,4 @@
-;;; emacs-flash-jump.el --- Jump logic for emacs-flash -*- lexical-binding: t -*-
+;;; flash-jump.el --- Jump logic for flash -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 ;; Author: chestnykh
@@ -9,14 +9,14 @@
 
 ;;; Code:
 
-(require 'emacs-flash-state)
-(require 'emacs-flash-label)
+(require 'flash-state)
+(require 'flash-label)
 
-;;; Configuration (set by emacs-flash.el)
+;;; Configuration (set by flash.el)
 
-(defvar emacs-flash-jump-position)
-(defvar emacs-flash-jumplist)
-(defvar emacs-flash-nohlsearch)
+(defvar flash-jump-position)
+(defvar flash-jumplist)
+(defvar flash-nohlsearch)
 
 ;;; Forward declarations for evil
 (defvar evil-ex-search-highlight-all)
@@ -24,20 +24,20 @@
 
 ;;; Jump Functions
 
-(defun emacs-flash-jump-to-match (match)
+(defun flash-jump-to-match (match)
   "Jump to MATCH position.
 Switches window if needed, unfolds if target is in fold.
-Uses `emacs-flash-jump-position' to determine cursor placement.
-Saves to jumplist if `emacs-flash-jumplist' is non-nil.
-Clears highlighting if `emacs-flash-nohlsearch' is non-nil."
+Uses `flash-jump-position' to determine cursor placement.
+Saves to jumplist if `flash-jumplist' is non-nil.
+Clears highlighting if `flash-nohlsearch' is non-nil."
   (when match
-    (let ((win (emacs-flash-match-window match))
-          (pos (emacs-flash-match-pos match))
-          (end-pos (emacs-flash-match-end-pos match))
-          (fold (emacs-flash-match-fold match))
-          (jump-pos emacs-flash-jump-position))
+    (let ((win (flash-match-window match))
+          (pos (flash-match-pos match))
+          (end-pos (flash-match-end-pos match))
+          (fold (flash-match-fold match))
+          (jump-pos flash-jump-position))
       ;; Save to jumplist before jumping
-      (when emacs-flash-jumplist
+      (when flash-jumplist
         (push-mark nil t))
       ;; Switch window if needed
       (unless (eq win (selected-window))
@@ -47,13 +47,13 @@ Clears highlighting if `emacs-flash-nohlsearch' is non-nil."
                   (if (eq jump-pos 'end) end-pos pos)))
       ;; Unfold if in fold
       (when fold
-        (emacs-flash--unfold-at-point))
+        (flash--unfold-at-point))
       ;; Clear search highlighting if requested
-      (when emacs-flash-nohlsearch
-        (emacs-flash--clear-search-highlight))
+      (when flash-nohlsearch
+        (flash--clear-search-highlight))
       t)))
 
-(defun emacs-flash--clear-search-highlight ()
+(defun flash--clear-search-highlight ()
   "Clear search highlighting from isearch and evil-search."
   ;; Clear isearch highlight
   (when (bound-and-true-p isearch-mode)
@@ -64,22 +64,22 @@ Clears highlighting if `emacs-flash-nohlsearch' is non-nil."
              (fboundp 'evil-ex-nohighlight))
     (evil-ex-nohighlight)))
 
-(defun emacs-flash-jump-to-label (state label-str)
+(defun flash-jump-to-label (state label-str)
   "Jump to match with label LABEL-STR in STATE.
 Returns t if jump successful, nil otherwise."
-  (when-let ((match (emacs-flash-find-match-by-label state label-str)))
-    (emacs-flash-jump-to-match match)))
+  (when-let ((match (flash-find-match-by-label state label-str)))
+    (flash-jump-to-match match)))
 
-(defun emacs-flash-jump-to-first (state)
+(defun flash-jump-to-first (state)
   "Jump to first match in STATE.
 Returns t if jump successful, nil otherwise."
-  (when-let ((match (car (emacs-flash-state-matches state))))
-    (emacs-flash-jump-to-match match)))
+  (when-let ((match (car (flash-state-matches state))))
+    (flash-jump-to-match match)))
 
-(defun emacs-flash-return-to-start (state)
+(defun flash-return-to-start (state)
   "Return to start position saved in STATE."
-  (let ((win (emacs-flash-state-start-window state))
-        (pos (emacs-flash-state-start-point state)))
+  (let ((win (flash-state-start-window state))
+        (pos (flash-state-start-point state)))
     (when (and win (window-live-p win))
       (select-window win))
     (when pos
@@ -87,7 +87,7 @@ Returns t if jump successful, nil otherwise."
 
 ;;; Fold Handling
 
-(defun emacs-flash--unfold-at-point ()
+(defun flash--unfold-at-point ()
   "Unfold region at point if folded.
 Supports `outline-mode', `org-mode', and hideshow."
   (cond
@@ -110,5 +110,5 @@ Supports `outline-mode', `org-mode', and hideshow."
       (let ((inhibit-read-only t))
         (put-text-property (point) (1+ (point)) 'invisible nil))))))
 
-(provide 'emacs-flash-jump)
-;;; emacs-flash-jump.el ends here
+(provide 'flash-jump)
+;;; flash-jump.el ends here

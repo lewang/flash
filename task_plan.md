@@ -1,4 +1,4 @@
-# Task Plan: emacs-flash
+# Task Plan: flash
 
 ## Goal
 Создать пакет для Emacs, реализующий функциональность flash.nvim — быструю навигацию по коду с метками (labels).
@@ -17,16 +17,16 @@
   - [x] 2.4 Описать основной цикл (search → label → highlight → input)
 
 - [x] Phase 3: Реализация MVP
-  - [x] 3.1 emacs-flash-state.el — cl-defstruct для state и match
-  - [x] 3.2 emacs-flash-search.el — поиск совпадений в видимых окнах
-  - [x] 3.3 emacs-flash-highlight.el — overlays для backdrop, matches, labels
-  - [x] 3.4 emacs-flash-label.el — назначение меток с пропуском конфликтных
-  - [x] 3.5 emacs-flash-jump.el — прыжок к метке, переключение окон
-  - [x] 3.6 emacs-flash.el — главный модуль, основной цикл, defcustom
+  - [x] 3.1 flash-state.el — cl-defstruct для state и match
+  - [x] 3.2 flash-search.el — поиск совпадений в видимых окнах
+  - [x] 3.3 flash-highlight.el — overlays для backdrop, matches, labels
+  - [x] 3.4 flash-label.el — назначение меток с пропуском конфликтных
+  - [x] 3.5 flash-jump.el — прыжок к метке, переключение окон
+  - [x] 3.6 flash.el — главный модуль, основной цикл, defcustom
   - [x] 3.7 Ручное тестирование базового функционала
 
 - [x] Phase 4: Расширенные функции
-  - [x] 4.1 emacs-flash-evil.el — интеграция с evil-mode
+  - [x] 4.1 flash-evil.el — интеграция с evil-mode
   - [x] 4.2 Rainbow labels (разноцветные метки)
   - [x] 4.3 Case-fold настройка (уже реализована в Phase 3)
 
@@ -105,27 +105,27 @@
 ### Новые возможности:
 
 **Phase 7:**
-- Jumplist integration — `emacs-flash-jumplist` (default: t)
+- Jumplist integration — `flash-jumplist` (default: t)
   - Сохраняет позицию в mark ring перед прыжком
   - Возврат через `C-u C-SPC` или evil `C-o`
-- Search history — `emacs-flash-search-history` (default: nil)
+- Search history — `flash-search-history` (default: nil)
   - Добавляет паттерн в историю isearch
-- Nohlsearch — `emacs-flash-nohlsearch` (default: nil)
+- Nohlsearch — `flash-nohlsearch` (default: nil)
   - Очищает подсветку поиска после прыжка
-- Continue last search — `emacs-flash-jump-continue`
+- Continue last search — `flash-jump-continue`
   - Команда для продолжения последнего поиска
-- Min pattern length — `emacs-flash-min-pattern-length` (default: 0)
+- Min pattern length — `flash-min-pattern-length` (default: 0)
   - Минимальная длина паттерна для показа меток
 
 **Phase 6.4:**
 - Jump position — позиция курсора после прыжка
-- `emacs-flash-jump-position` — defcustom с 2 опциями:
+- `flash-jump-position` — defcustom с 2 опциями:
   - `start` — в начало совпадения (default)
   - `end` — в конец совпадения
 
 **Phase 6.3:**
 - Label positioning — настройка позиции метки
-- `emacs-flash-label-position` — defcustom с 4 опциями:
+- `flash-label-position` — defcustom с 4 опциями:
   - `after` — после совпадения (default, как flash.nvim)
   - `before` — перед совпадением
   - `overlay` — поверх первого символа
@@ -133,11 +133,11 @@
 
 **Phase 6.2:**
 - Search integration — flash метки во время `/` и `?` поиска
-- `emacs-flash-isearch-mode` — глобальный minor mode
+- `flash-isearch-mode` — глобальный minor mode
 - Поддержка evil-ex-search и стандартного isearch
 - Toggle через `C-;` во время поиска (использует emulation-mode-map-alists для приоритета над evil)
 - Нажатие на метку прыгает и выходит из поиска
-- **Trigger mechanism**: `emacs-flash-isearch-trigger` (default: nil)
+- **Trigger mechanism**: `flash-isearch-trigger` (default: nil)
   - Опциональный режим: установить `";"` для активации через триггер
   - При активации: нажать `;` → `[label?]` → нажать метку для прыжка
 - **Smart skip**: метки, которые могут продолжить поисковый паттерн, автоматически пропускаются
@@ -147,18 +147,18 @@
 - Char motions (f/t/F/T) — улучшенные движения по символам
 - Мгновенный прыжок к первому совпадению + метки для остальных
 - Повтор через `;` и `,`
-- `emacs-flash-char-jump-labels` — включить/выключить метки
-- `emacs-flash-char-multi-line` — поиск за пределами строки
-- Интеграция с evil-mode через `emacs-flash-char-setup-evil-keys`
+- `flash-char-jump-labels` — включить/выключить метки
+- `flash-char-multi-line` — поиск за пределами строки
+- Интеграция с evil-mode через `flash-char-setup-evil-keys`
 
 **Phase 4.2:**
 - Rainbow labels с поддержкой светлых/тёмных тем
-- `emacs-flash-highlight-matches` — опция отключения подсветки совпадений
+- `flash-highlight-matches` — опция отключения подсветки совпадений
 - Faces адаптируются к теме через наследование от font-lock
 
 **Phase 4.3:**
 - ~~Regex search~~ (удалено — держим простым, literal search достаточен для навигации)
-- Case-fold уже был реализован в Phase 3 (`emacs-flash-case-fold`)
+- Case-fold уже был реализован в Phase 3 (`flash-case-fold`)
 
 ## Files
 - `task_plan.md` — этот файл

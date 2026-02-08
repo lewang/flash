@@ -1,4 +1,4 @@
-;;; emacs-flash-search.el --- Search functionality for emacs-flash -*- lexical-binding: t -*-
+;;; flash-search.el --- Search functionality for flash -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 ;; Author: chestnykh
@@ -9,22 +9,22 @@
 
 ;;; Code:
 
-(require 'emacs-flash-state)
+(require 'flash-state)
 
-(defvar emacs-flash-case-fold)
+(defvar flash-case-fold)
 
-(defun emacs-flash-search (state)
+(defun flash-search (state)
   "Find all matches for STATE pattern in all windows.
 Updates STATE matches field with found matches."
   ;; Release markers from old matches before creating new ones
-  (dolist (m (emacs-flash-state-matches state))
-    (when (markerp (emacs-flash-match-pos m))
-      (set-marker (emacs-flash-match-pos m) nil))
-    (when (markerp (emacs-flash-match-end-pos m))
-      (set-marker (emacs-flash-match-end-pos m) nil)))
-  (let ((pattern (emacs-flash-state-pattern state))
-        (windows (emacs-flash-state-windows state))
-        (case-fold-search emacs-flash-case-fold)
+  (dolist (m (flash-state-matches state))
+    (when (markerp (flash-match-pos m))
+      (set-marker (flash-match-pos m) nil))
+    (when (markerp (flash-match-end-pos m))
+      (set-marker (flash-match-end-pos m) nil)))
+  (let ((pattern (flash-state-pattern state))
+        (windows (flash-state-windows state))
+        (case-fold-search flash-case-fold)
         matches)
     (when (> (length pattern) 0)
       (dolist (win windows)
@@ -36,17 +36,17 @@ Updates STATE matches field with found matches."
                 (while (search-forward pattern limit t)
                   (let* ((pos (match-beginning 0))
                          (end-pos (match-end 0))
-                         (fold (emacs-flash--get-fold-at pos)))
-                    (push (make-emacs-flash-match
+                         (fold (flash--get-fold-at pos)))
+                    (push (make-flash-match
                            :pos (copy-marker pos)
                            :end-pos (copy-marker end-pos)
                            :label nil
                            :window win
                            :fold fold)
                           matches)))))))))
-    (setf (emacs-flash-state-matches state) (nreverse matches))))
+    (setf (flash-state-matches state) (nreverse matches))))
 
-(defun emacs-flash--get-fold-at (pos)
+(defun flash--get-fold-at (pos)
   "Return fold line start for POS if it is hidden, otherwise nil.
 Works with both text properties and overlays (like hideshow)."
   (when (invisible-p pos)
@@ -68,5 +68,5 @@ Works with both text properties and overlays (like hideshow)."
             (forward-line -1))
           (line-beginning-position))))))
 
-(provide 'emacs-flash-search)
-;;; emacs-flash-search.el ends here
+(provide 'flash-search)
+;;; flash-search.el ends here

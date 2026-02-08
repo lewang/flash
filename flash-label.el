@@ -1,4 +1,4 @@
-;;; emacs-flash-label.el --- Label assignment for emacs-flash -*- lexical-binding: t -*-
+;;; flash-label.el --- Label assignment for flash -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025
 ;; Author: chestnykh
@@ -11,47 +11,47 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'emacs-flash-state)
+(require 'flash-state)
 
-;;; Configuration (set by emacs-flash.el)
+;;; Configuration (set by flash.el)
 
-(defvar emacs-flash-labels)
-(defvar emacs-flash-label-uppercase)
-(defvar emacs-flash-multi-char-labels)
-(defvar emacs-flash-case-fold)
+(defvar flash-labels)
+(defvar flash-label-uppercase)
+(defvar flash-multi-char-labels)
+(defvar flash-case-fold)
 
 ;;; Label Functions
 
-(defun emacs-flash-label-matches (state)
+(defun flash-label-matches (state)
   "Assign labels to matches in STATE.
 Labels are assigned to matches sorted by distance from cursor.
 Labels that conflict with pattern continuation are skipped.
 Uses multi-char labels when matches exceed available single-char labels."
-  (let* ((matches (emacs-flash-state-matches state))
-         (pattern (emacs-flash-state-pattern state))
-         (available-chars (emacs-flash--available-labels state pattern))
-         (sorted (emacs-flash--sort-by-distance state matches))
-         (labels (emacs-flash--generate-labels available-chars (length sorted))))
+  (let* ((matches (flash-state-matches state))
+         (pattern (flash-state-pattern state))
+         (available-chars (flash--available-labels state pattern))
+         (sorted (flash--sort-by-distance state matches))
+         (labels (flash--generate-labels available-chars (length sorted))))
     ;; Reset all labels first
     (dolist (match matches)
-      (setf (emacs-flash-match-label match) nil))
+      (setf (flash-match-label match) nil))
     ;; Assign labels to sorted matches
     (cl-loop for match in sorted
              for label in labels
-             do (setf (emacs-flash-match-label match) label))))
+             do (setf (flash-match-label match) label))))
 
-(defun emacs-flash--generate-labels (chars count)
+(defun flash--generate-labels (chars count)
   "Generate COUNT labels from CHARS.  Return them as strings.
 Returns list of strings.  Uses single chars when possible.
-When `emacs-flash-multi-char-labels' is non-nil and COUNT > (length CHARS),
+When `flash-multi-char-labels' is non-nil and COUNT > (length CHARS),
 generates multi-char labels (aa, as, ad, ...).
-When `emacs-flash-multi-char-labels' is nil, excess matches remain unlabeled."
+When `flash-multi-char-labels' is nil, excess matches remain unlabeled."
   (let ((n (length chars)))
     (if (<= count n)
         ;; Single char labels
         (mapcar #'char-to-string (cl-subseq chars 0 count))
       ;; More matches than single chars
-      (if emacs-flash-multi-char-labels
+      (if flash-multi-char-labels
           ;; Multi-char labels enabled
           (let ((labels nil)
                 (needed count))
@@ -67,12 +67,12 @@ When `emacs-flash-multi-char-labels' is nil, excess matches remain unlabeled."
         ;; Multi-char disabled - only use available single chars
         (mapcar #'char-to-string chars)))))
 
-(defun emacs-flash--available-labels (state pattern)
+(defun flash--available-labels (state pattern)
   "Return labels that won't conflict with PATTERN continuation.
 STATE is used to check for conflicts in all search windows.
-When `emacs-flash-label-uppercase' is non-nil, includes uppercase versions."
-  (let* ((base-chars (string-to-list emacs-flash-labels))
-         (chars (if emacs-flash-label-uppercase
+When `flash-label-uppercase' is non-nil, includes uppercase versions."
+  (let* ((base-chars (string-to-list flash-labels))
+         (chars (if flash-label-uppercase
                     ;; Add uppercase versions of alphabetic chars
                     (append base-chars
                             (cl-remove-if-not
@@ -87,44 +87,44 @@ When `emacs-flash-label-uppercase' is non-nil, includes uppercase versions."
       ;; Skip labels that could continue the pattern
       (cl-remove-if
        (lambda (char)
-         (emacs-flash--label-conflicts-p state pattern char))
+         (flash--label-conflicts-p state pattern char))
        chars))))
 
-(defun emacs-flash--label-conflicts-p (state pattern char)
+(defun flash--label-conflicts-p (state pattern char)
   "Return non-nil if CHAR would continue PATTERN to a real match.
 STATE provides the windows to search in and search scope.
-When `emacs-flash-state-whole-buffer' is non-nil, searches entire buffers
+When `flash-state-whole-buffer' is non-nil, searches entire buffers
 \(for search integration where matches can be anywhere).
 Otherwise only searches visible portions of windows.
-When `emacs-flash-label-uppercase' is enabled, uppercase CHAR never conflicts
+When `flash-label-uppercase' is enabled, uppercase CHAR never conflicts
 because user input is distinguished by case: lowercase continues search,
 uppercase selects label."
   ;; Uppercase labels don't conflict when uppercase mode is enabled
-  (when (or (not emacs-flash-label-uppercase)
+  (when (or (not flash-label-uppercase)
             (not (and (>= char ?A) (<= char ?Z))))
     (let ((extended (concat pattern (char-to-string char)))
-          (whole-buffer (emacs-flash-state-whole-buffer state)))
+          (whole-buffer (flash-state-whole-buffer state)))
       (cl-some
        (lambda (win)
          (when (window-live-p win)
            (with-current-buffer (window-buffer win)
              (save-excursion
                (goto-char (if whole-buffer (point-min) (window-start win)))
-               (let ((case-fold-search emacs-flash-case-fold))
+               (let ((case-fold-search flash-case-fold))
                  (search-forward extended
                                  (unless whole-buffer (window-end win t))
                                  t))))))
-       (emacs-flash-state-windows state)))))
+       (flash-state-windows state)))))
 
-(defun emacs-flash--sort-by-distance (state matches)
+(defun flash--sort-by-distance (state matches)
   "Sort MATCHES by distance from cursor position.
 STATE provides the reference position via start-point.
 Matches at cursor position are sorted last (for continue functionality)."
-  (let ((pos (or (emacs-flash-state-start-point state) (point))))
+  (let ((pos (or (flash-state-start-point state) (point))))
     (sort (copy-sequence matches)
           (lambda (a b)
-            (let ((dist-a (abs (- (marker-position (emacs-flash-match-pos a)) pos)))
-                  (dist-b (abs (- (marker-position (emacs-flash-match-pos b)) pos))))
+            (let ((dist-a (abs (- (marker-position (flash-match-pos a)) pos)))
+                  (dist-b (abs (- (marker-position (flash-match-pos b)) pos))))
               ;; Matches at cursor (distance 0) go last
               (cond
                ((and (= dist-a 0) (= dist-b 0)) nil)
@@ -132,21 +132,21 @@ Matches at cursor position are sorted last (for continue functionality)."
                ((= dist-b 0) t)    ; a goes before b
                (t (< dist-a dist-b))))))))
 
-(defun emacs-flash-find-match-by-label (state label-str)
+(defun flash-find-match-by-label (state label-str)
   "Find match with exact label LABEL-STR in STATE."
-  (cl-find label-str (emacs-flash-state-matches state)
-           :key #'emacs-flash-match-label
+  (cl-find label-str (flash-state-matches state)
+           :key #'flash-match-label
            :test #'equal))
 
-(defun emacs-flash-matches-with-label-prefix (state prefix)
+(defun flash-matches-with-label-prefix (state prefix)
   "Return matches in STATE whose labels start with PREFIX."
   (cl-remove-if-not
    (lambda (match)
-     (let ((label (emacs-flash-match-label match)))
+     (let ((label (flash-match-label match)))
        (and label
             (stringp label)
             (string-prefix-p prefix label))))
-   (emacs-flash-state-matches state)))
+   (flash-state-matches state)))
 
-(provide 'emacs-flash-label)
-;;; emacs-flash-label.el ends here
+(provide 'flash-label)
+;;; flash-label.el ends here
