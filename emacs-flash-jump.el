@@ -89,7 +89,7 @@ Returns t if jump successful, nil otherwise."
 
 (defun emacs-flash--unfold-at-point ()
   "Unfold region at point if folded.
-Supports outline-mode, org-mode, and hideshow."
+Supports `outline-mode', `org-mode', and hideshow."
   (cond
    ;; Org-mode
    ((and (derived-mode-p 'org-mode)

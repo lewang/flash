@@ -9,6 +9,11 @@
 (require 'emacs-flash-state)
 (require 'emacs-flash-highlight)
 
+;; Variables dynamically bound in tests.
+(defvar emacs-flash-backdrop)
+(defvar emacs-flash-label-position)
+(defvar emacs-flash-rainbow)
+
 (ert-deftest emacs-flash-highlight-clear-test ()
   "Test that highlight-clear removes all overlays."
   (with-temp-buffer

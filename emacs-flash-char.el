@@ -45,7 +45,8 @@ Example: \"aisoAISO;,cCxr\" to reserve insert/edit commands."
 ;;; State Variables
 
 (defvar emacs-flash-char--last-motion nil
-  "Last char motion type: `find', `find-to', `find-backward', or `find-to-backward'.")
+  "Last char motion type.
+One of `find', `find-to', `find-backward', or `find-to-backward'.")
 
 (defvar emacs-flash-char--last-char nil
   "Last character searched for.")
@@ -85,7 +86,8 @@ Searches current line only unless `emacs-flash-char-multi-line' is non-nil."
         positions)
     (save-excursion
       ;; Move one char in search direction to avoid matching at point
-      (when forward (forward-char 1))
+      (when (and forward (< (point) (point-max)))
+        (forward-char 1))
       (if forward
           (while (search-forward (char-to-string char) limit t)
             (push (match-beginning 0) positions))

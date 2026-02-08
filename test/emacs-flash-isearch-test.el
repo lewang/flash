@@ -82,14 +82,18 @@ so label conflict detection must check entire buffer."
       (emacs-flash-isearch--stop))))
 
 (ert-deftest emacs-flash-isearch-update-empty-pattern-test ()
-  "Test that empty pattern doesn't cause errors."
+  "Test that empty pattern clears matches and overlays."
   (with-temp-buffer
     (insert "hello world")
     (set-window-buffer (selected-window) (current-buffer))
     (let ((emacs-flash-isearch-enabled t))
       (emacs-flash-isearch--start)
-      ;; Should not error on empty pattern
+      (emacs-flash-isearch--update "hello")
+      (should (emacs-flash-state-matches emacs-flash-isearch--state))
+      (should (emacs-flash-state-overlays emacs-flash-isearch--state))
       (emacs-flash-isearch--update "")
+      (should-not (emacs-flash-state-matches emacs-flash-isearch--state))
+      (should-not (emacs-flash-state-overlays emacs-flash-isearch--state))
       (emacs-flash-isearch--stop))))
 
 ;;; Toggle Tests
@@ -166,6 +170,15 @@ so label conflict detection must check entire buffer."
   "Test that trigger defcustom exists and defaults to nil (smart skip)."
   (should (boundp 'emacs-flash-isearch-trigger))
   (should (null emacs-flash-isearch-trigger)))
+
+(ert-deftest emacs-flash-isearch-trigger-char-validation-test ()
+  "Test trigger conversion only accepts one-character strings."
+  (let ((emacs-flash-isearch-trigger ""))
+    (should-not (emacs-flash-isearch--trigger-char)))
+  (let ((emacs-flash-isearch-trigger "ab"))
+    (should-not (emacs-flash-isearch--trigger-char)))
+  (let ((emacs-flash-isearch-trigger ";"))
+    (should (= ?\; (emacs-flash-isearch--trigger-char)))))
 
 ;;; Mode Tests
 

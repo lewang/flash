@@ -8,6 +8,9 @@
 (require 'ert)
 (require 'emacs-flash-char)
 
+;; Variables dynamically bound in tests.
+(defvar emacs-flash-labels)
+
 ;;; Search Tests
 
 (ert-deftest emacs-flash-char-search-forward-test ()
@@ -37,6 +40,13 @@
     (goto-char (point-min))
     (let ((positions (emacs-flash-char--search ?z t)))
       (should (null positions)))))
+
+(ert-deftest emacs-flash-char-search-forward-at-eob-test ()
+  "Test forward search at end of buffer does not signal `end-of-buffer'."
+  (with-temp-buffer
+    (insert "hello")
+    (goto-char (point-max))
+    (should-not (emacs-flash-char--search ?h t))))
 
 (ert-deftest emacs-flash-char-search-line-boundary-test ()
   "Test search respects line boundary by default."

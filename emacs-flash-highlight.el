@@ -21,7 +21,7 @@
      :background "#fecdd3" :foreground "#881337" :weight bold))
   "Face for jump labels.
 Blue on light, light pink on dark (Tailwind blue-500, rose-200/900).
-Customize with `M-x customize-face RET emacs-flash-label' or `custom-set-faces'."
+Customize with \\[customize-face] or `custom-set-faces'."
   :group 'emacs-flash)
 
 (defface emacs-flash-match
@@ -101,7 +101,8 @@ Inherits from `shadow' (like flash.nvim's FlashBackdrop → Comment)."
     emacs-flash-label-fuchsia
     emacs-flash-label-rose)
   "List of faces to cycle through for rainbow labels.
-Same 10 colors as flash.nvim: red, amber, lime, green, teal, cyan, blue, violet, fuchsia, rose.")
+Same 10 colors as flash.nvim: red, amber, lime, green, teal, cyan, blue,
+violet, fuchsia, rose.")
 
 ;;; Configuration (set by emacs-flash.el)
 

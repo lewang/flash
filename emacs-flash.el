@@ -57,7 +57,8 @@ Uppercase labels never conflict with search continuation."
 (defcustom emacs-flash-multi-char-labels nil
   "When non-nil, use multi-character labels (aa, as, ad...) when needed.
 Multi-char labels are used when matches exceed available single-char labels.
-When nil, only single-character labels are used and excess matches are unlabeled."
+When nil, only single-character labels are used and excess matches stay
+unlabeled."
   :type 'boolean
   :group 'emacs-flash)
 
@@ -123,7 +124,7 @@ or `C-x C-SPC' (global mark), or with evil's `C-o'."
 
 (defcustom emacs-flash-search-history nil
   "When non-nil, add search pattern to Emacs search history.
-The pattern will appear in `isearch' history (M-p/M-n)."
+The pattern will appear in `isearch' history."
   :type 'boolean
   :group 'emacs-flash)
 

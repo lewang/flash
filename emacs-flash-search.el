@@ -28,25 +28,26 @@ Updates STATE matches field with found matches."
         matches)
     (when (> (length pattern) 0)
       (dolist (win windows)
-        (with-selected-window win
-          (save-excursion
-            (goto-char (window-start win))
-            (let ((limit (window-end win t)))
-              (while (search-forward pattern limit t)
-                (let* ((pos (match-beginning 0))
-                       (end-pos (match-end 0))
-                       (fold (emacs-flash--get-fold-at pos)))
-                  (push (make-emacs-flash-match
-                         :pos (copy-marker pos)
-                         :end-pos (copy-marker end-pos)
-                         :label nil
-                         :window win
-                         :fold fold)
-                        matches))))))))
+        (when (window-live-p win)
+          (with-selected-window win
+            (save-excursion
+              (goto-char (window-start win))
+              (let ((limit (window-end win t)))
+                (while (search-forward pattern limit t)
+                  (let* ((pos (match-beginning 0))
+                         (end-pos (match-end 0))
+                         (fold (emacs-flash--get-fold-at pos)))
+                    (push (make-emacs-flash-match
+                           :pos (copy-marker pos)
+                           :end-pos (copy-marker end-pos)
+                           :label nil
+                           :window win
+                           :fold fold)
+                          matches)))))))))
     (setf (emacs-flash-state-matches state) (nreverse matches))))
 
 (defun emacs-flash--get-fold-at (pos)
-  "Return fold line start position if POS is in invisible/folded region, nil otherwise.
+  "Return fold line start for POS if it is hidden, otherwise nil.
 Works with both text properties and overlays (like hideshow)."
   (when (invisible-p pos)
     ;; Find the overlay or text property that makes this position invisible

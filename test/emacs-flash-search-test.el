@@ -70,6 +70,25 @@
         (should (markerp (emacs-flash-match-pos match)))
         (should (markerp (emacs-flash-match-end-pos match)))))))
 
+(ert-deftest emacs-flash-search-skips-dead-window-test ()
+  "Test search skips windows that were deleted during a flash session."
+  (let ((buf (generate-new-buffer "*flash-search-dead-window*"))
+        win)
+    (unwind-protect
+        (progn
+          (setq win (split-window-right))
+          (with-current-buffer buf
+            (insert "foo bar"))
+          (set-window-buffer win buf)
+          (delete-window win)
+          (let ((state (emacs-flash-state-create (list win))))
+            (setf (emacs-flash-state-pattern state) "foo")
+            (emacs-flash-search state)
+            (should-not (emacs-flash-state-matches state))))
+      (when (window-live-p win)
+        (delete-window win))
+      (kill-buffer buf))))
+
 (ert-deftest emacs-flash-get-fold-at-visible-test ()
   "Test fold detection returns nil for visible text."
   (with-temp-buffer

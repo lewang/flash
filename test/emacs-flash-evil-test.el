@@ -8,6 +8,8 @@
 
 (require 'ert)
 
+(declare-function evil-get-command-property "evil")
+
 ;; Only run tests if evil is available
 (when (require 'evil nil t)
   (require 'emacs-flash)

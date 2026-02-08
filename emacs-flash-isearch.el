@@ -113,19 +113,22 @@ When set (e.g. \";\"), you must type trigger + label to jump."
 (defun emacs-flash-isearch--update (pattern)
   "Update flash labels for PATTERN."
   (when (and emacs-flash-isearch--active
-             emacs-flash-isearch--state
-             (> (length pattern) 0))
+             emacs-flash-isearch--state)
     (with-current-buffer (or emacs-flash-isearch--original-buffer
                              (current-buffer))
       ;; Clear old overlays first
       (emacs-flash-highlight-clear emacs-flash-isearch--state)
-      ;; Update pattern and search
+      ;; Update pattern, then refresh or clear matches.
       (setf (emacs-flash-state-pattern emacs-flash-isearch--state) pattern)
-      (emacs-flash-search emacs-flash-isearch--state)
-      ;; Assign labels
-      (emacs-flash-label-matches emacs-flash-isearch--state)
-      ;; Update display
-      (emacs-flash-highlight-update emacs-flash-isearch--state))))
+      (if (> (length pattern) 0)
+          (progn
+            (emacs-flash-search emacs-flash-isearch--state)
+            ;; Assign labels.
+            (emacs-flash-label-matches emacs-flash-isearch--state)
+            ;; Update display.
+            (emacs-flash-highlight-update emacs-flash-isearch--state))
+        ;; Empty pattern should clear labels and stale overlays.
+        (setf (emacs-flash-state-matches emacs-flash-isearch--state) nil)))))
 
 (defun emacs-flash-isearch--toggle ()
   "Toggle flash labels during search."
@@ -149,17 +152,63 @@ When set (e.g. \";\"), you must type trigger + label to jump."
       (emacs-flash-isearch--update isearch-string)))))
 
 (defvar emacs-flash-isearch--pending-match nil
-  "Match to jump to after exiting search.")
+  "Serialized match snapshot to jump to after exiting search.")
+
+(defun emacs-flash-isearch--snapshot-match (match)
+  "Return stable jump snapshot for MATCH."
+  (let* ((pos-marker (emacs-flash-match-pos match))
+         (end-marker (emacs-flash-match-end-pos match))
+         (pos (and (markerp pos-marker) (marker-position pos-marker)))
+         (end-pos (and (markerp end-marker) (marker-position end-marker)))
+         (buffer (and (markerp pos-marker) (marker-buffer pos-marker)))
+         (window (emacs-flash-match-window match)))
+    (when (and (integerp pos)
+               (integerp end-pos)
+               (buffer-live-p buffer))
+      (list :buffer buffer
+            :window (and (window-live-p window) window)
+            :pos pos
+            :end-pos end-pos
+            :fold (emacs-flash-match-fold match)))))
+
+(defun emacs-flash-isearch--snapshot-to-match (snapshot)
+  "Convert SNAPSHOT back into an `emacs-flash-match'."
+  (let ((buffer (plist-get snapshot :buffer))
+        (window (plist-get snapshot :window))
+        (pos (plist-get snapshot :pos))
+        (end-pos (plist-get snapshot :end-pos))
+        (fold (plist-get snapshot :fold)))
+    (when (buffer-live-p buffer)
+      (with-current-buffer buffer
+        (when (and (integerp pos)
+                   (integerp end-pos)
+                   (<= (point-min) pos)
+                   (<= pos (point-max))
+                   (<= (point-min) end-pos)
+                   (<= end-pos (1+ (point-max))))
+          (make-emacs-flash-match
+           :pos (copy-marker pos)
+           :end-pos (copy-marker end-pos)
+           :label nil
+           :window (if (window-live-p window) window (selected-window))
+           :fold fold))))))
+
+(defun emacs-flash-isearch--trigger-char ()
+  "Return label trigger character, or nil when disabled/invalid."
+  (when (and (stringp emacs-flash-isearch-trigger)
+             (= (length emacs-flash-isearch-trigger) 1))
+    (string-to-char emacs-flash-isearch-trigger)))
 
 (defun emacs-flash-isearch--try-jump (char)
-  "Try to jump to label CHAR. Return t if jumped, nil otherwise."
+  "Try to jump to label CHAR.  Return t if jumped, nil otherwise."
   (when (and emacs-flash-isearch--active
              emacs-flash-isearch--state)
     (let ((match (emacs-flash-find-match-by-label
                   emacs-flash-isearch--state (char-to-string char))))
-      (when match
+      (when-let ((snapshot (and match
+                                (emacs-flash-isearch--snapshot-match match))))
         ;; Save match for jumping after minibuffer exits
-        (setq emacs-flash-isearch--pending-match match)
+        (setq emacs-flash-isearch--pending-match snapshot)
         ;; Clean up flash overlays
         (emacs-flash-isearch--stop)
         t))))
@@ -167,9 +216,15 @@ When set (e.g. \";\"), you must type trigger + label to jump."
 (defun emacs-flash-isearch--do-pending-jump ()
   "Perform pending jump after search exit."
   (when emacs-flash-isearch--pending-match
-    (let ((match emacs-flash-isearch--pending-match))
+    (let ((snapshot emacs-flash-isearch--pending-match))
       (setq emacs-flash-isearch--pending-match nil)
-      (emacs-flash-jump-to-match match))))
+      (when-let ((match (emacs-flash-isearch--snapshot-to-match snapshot)))
+        (unwind-protect
+            (emacs-flash-jump-to-match match)
+          (when (markerp (emacs-flash-match-pos match))
+            (set-marker (emacs-flash-match-pos match) nil))
+          (when (markerp (emacs-flash-match-end-pos match))
+            (set-marker (emacs-flash-match-end-pos match) nil)))))))
 
 ;;; Evil Integration
 
@@ -177,7 +232,7 @@ When set (e.g. \";\"), you must type trigger + label to jump."
   "Hook function for evil minibuffer setup.")
 
 (defun emacs-flash-isearch--evil-start-advice (&rest _)
-  "Advice to start flash when evil search starts."
+  "Start flash at evil search entry."
   (setq emacs-flash-isearch--original-buffer
         (or (bound-and-true-p evil-ex-original-buffer)
             (current-buffer)))
@@ -190,7 +245,7 @@ When set (e.g. \";\"), you must type trigger + label to jump."
   (run-at-time 0 nil #'emacs-flash-isearch--do-pending-jump))
 
 (defun emacs-flash-isearch--evil-update ()
-  "Update flash during evil search (called from after-change-functions)."
+  "Update flash during evil search (called from `after-change-functions')."
   (when (and emacs-flash-isearch--active
              (minibufferp)
              (bound-and-true-p evil-ex-original-buffer))
@@ -206,26 +261,27 @@ Without trigger: any label char jumps (only when multiple matches)."
   (when (and emacs-flash-isearch--active
              emacs-flash-isearch--state
              (characterp last-command-event))
-    (cond
-     ;; Label mode is active - next char is the label
-     (emacs-flash-isearch--label-mode
-      (setq emacs-flash-isearch--label-mode nil)
-      (when (emacs-flash-isearch--try-jump last-command-event)
-        (exit-minibuffer)))
-     ;; Trigger character pressed - activate label mode
-     ((and emacs-flash-isearch-trigger
-           (= last-command-event (string-to-char emacs-flash-isearch-trigger))
-           (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 0))
-      (setq emacs-flash-isearch--label-mode t)
-      ;; Show indicator in minibuffer
-      (minibuffer-message " [label?]")
-      ;; Consume the trigger - don't add to search pattern
-      (setq this-command 'ignore))
-     ;; No trigger configured - try jump if label matches
-     ((and (null emacs-flash-isearch-trigger)
-           (emacs-flash-state-matches emacs-flash-isearch--state))
-      (when (emacs-flash-isearch--try-jump last-command-event)
-        (exit-minibuffer))))))
+    (let ((trigger (emacs-flash-isearch--trigger-char)))
+      (cond
+       ;; Label mode is active - next char is the label
+       (emacs-flash-isearch--label-mode
+        (setq emacs-flash-isearch--label-mode nil)
+        (when (emacs-flash-isearch--try-jump last-command-event)
+          (exit-minibuffer)))
+       ;; Trigger character pressed - activate label mode
+       ((and trigger
+             (= last-command-event trigger)
+             (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 0))
+        (setq emacs-flash-isearch--label-mode t)
+        ;; Show indicator in minibuffer
+        (minibuffer-message " [label?]")
+        ;; Consume the trigger - don't add to search pattern
+        (setq this-command 'ignore))
+       ;; No trigger configured - try jump if label matches
+       ((and (null trigger)
+             (emacs-flash-state-matches emacs-flash-isearch--state))
+        (when (emacs-flash-isearch--try-jump last-command-event)
+          (exit-minibuffer)))))))
 
 (defvar emacs-flash-isearch--emulation-alist nil
   "Alist for `emulation-mode-map-alists' to override evil keymaps.")
@@ -284,12 +340,16 @@ Without trigger: any label char jumps (only when multiple matches)."
   (when (and emacs-flash-isearch-toggle-key
              (boundp 'evil-ex-search-keymap))
     (define-key evil-ex-search-keymap
-                (kbd emacs-flash-isearch-toggle-key) nil)))
+                (kbd emacs-flash-isearch-toggle-key) nil))
+  (setq emulation-mode-map-alists
+        (delq 'emacs-flash-isearch--emulation-alist
+              emulation-mode-map-alists))
+  (setq emacs-flash-isearch--emulation-alist nil))
 
 ;;; Isearch Integration
 
 (defun emacs-flash-isearch--isearch-start ()
-  "Start flash when isearch starts."
+  "Start flash at isearch entry."
   (emacs-flash-isearch--start))
 
 (defun emacs-flash-isearch--isearch-end ()
@@ -310,29 +370,30 @@ ORIG-FUN is the original function, ARGS are passed through."
   (if (and emacs-flash-isearch--active
            emacs-flash-isearch--state
            (characterp last-command-event))
-      (cond
-       ;; Label mode is active - next char is the label
-       (emacs-flash-isearch--label-mode
-        (setq emacs-flash-isearch--label-mode nil)
-        (if (emacs-flash-isearch--try-jump last-command-event)
-            (isearch-exit)
-          ;; Not a valid label, continue with normal input
-          (apply orig-fun args)))
-       ;; Trigger character pressed - activate label mode
-       ((and emacs-flash-isearch-trigger
-             (= last-command-event (string-to-char emacs-flash-isearch-trigger))
-             (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 0))
-        (setq emacs-flash-isearch--label-mode t)
-        (message "[label?]"))
-       ;; No trigger configured - try jump if label matches
-       ((and (null emacs-flash-isearch-trigger)
-             (emacs-flash-state-matches emacs-flash-isearch--state))
-        (if (emacs-flash-isearch--try-jump last-command-event)
-            (isearch-exit)
-          ;; Not a valid label, continue with normal input
-          (apply orig-fun args)))
-       ;; Default - normal isearch behavior
-       (t (apply orig-fun args)))
+      (let ((trigger (emacs-flash-isearch--trigger-char)))
+        (cond
+         ;; Label mode is active - next char is the label
+         (emacs-flash-isearch--label-mode
+          (setq emacs-flash-isearch--label-mode nil)
+          (if (emacs-flash-isearch--try-jump last-command-event)
+              (isearch-exit)
+            ;; Not a valid label, continue with normal input
+            (apply orig-fun args)))
+         ;; Trigger character pressed - activate label mode
+         ((and trigger
+               (= last-command-event trigger)
+               (> (length (emacs-flash-state-matches emacs-flash-isearch--state)) 0))
+          (setq emacs-flash-isearch--label-mode t)
+          (message "[label?]"))
+         ;; No trigger configured - try jump if label matches
+         ((and (null trigger)
+               (emacs-flash-state-matches emacs-flash-isearch--state))
+          (if (emacs-flash-isearch--try-jump last-command-event)
+              (isearch-exit)
+            ;; Not a valid label, continue with normal input
+            (apply orig-fun args)))
+         ;; Default - normal isearch behavior
+         (t (apply orig-fun args))))
     ;; Flash not active - normal behavior
     (apply orig-fun args)))
 

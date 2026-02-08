@@ -41,8 +41,8 @@ Uses multi-char labels when matches exceed available single-char labels."
              do (setf (emacs-flash-match-label match) label))))
 
 (defun emacs-flash--generate-labels (chars count)
-  "Generate COUNT labels from CHARS.
-Returns list of strings. Uses single chars when possible.
+  "Generate COUNT labels from CHARS.  Return them as strings.
+Returns list of strings.  Uses single chars when possible.
 When `emacs-flash-multi-char-labels' is non-nil and COUNT > (length CHARS),
 generates multi-char labels (aa, as, ad, ...).
 When `emacs-flash-multi-char-labels' is nil, excess matches remain unlabeled."
@@ -91,7 +91,7 @@ When `emacs-flash-label-uppercase' is non-nil, includes uppercase versions."
        chars))))
 
 (defun emacs-flash--label-conflicts-p (state pattern char)
-  "Check if CHAR as next input would match text.
+  "Return non-nil if CHAR would continue PATTERN to a real match.
 STATE provides the windows to search in and search scope.
 When `emacs-flash-state-whole-buffer' is non-nil, searches entire buffers
 \(for search integration where matches can be anywhere).
@@ -139,7 +139,7 @@ Matches at cursor position are sorted last (for continue functionality)."
            :test #'equal))
 
 (defun emacs-flash-matches-with-label-prefix (state prefix)
-  "Return matches whose labels start with PREFIX."
+  "Return matches in STATE whose labels start with PREFIX."
   (cl-remove-if-not
    (lambda (match)
      (let ((label (emacs-flash-match-label match)))
