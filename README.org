@@ -16,13 +16,13 @@ Unlike [[https://github.com/abo-abo/avy][avy]], =flash= uses *incremental search
 
 ** Features
 
-- *Search Integration*: labels appear during regular =C-s=, =/=, =?= search. Press a label character to jump instantly.
+- *Search Integration*: labels appear during regular ~C-s~, ~/~, ~?~ search. Press a label character to jump instantly.
 - *Incremental input*: type as many characters as you need before using a label. No fixed-length input.
-- *Enhanced =f=, =t=, =F=, =T= motions* with multi-match labels.
+- *Enhanced ~f~, ~t~, ~F~, ~T~ motions* with multi-match labels.
 - *Treesitter Integration*: select any parent node of the syntax tree at point with a single keystroke.
 - *Standalone Jump Mode* (core feature): type a character, then press a label to jump where you need.
 - *Multi-window* jumping across all visible windows.
-- *Evil integration*: works as a proper evil motion (composable with operators like =d=, =y=, =c=).
+- *Evil integration*: works as a proper evil motion (composable with operators like ~d~, ~y~, ~c~).
 
 ** Requirements
 
@@ -73,34 +73,34 @@ Unlike [[https://github.com/abo-abo/avy][avy]], =flash= uses *incremental search
 
 =M-x flash-jump= starts an interactive search. Type characters to narrow matches, then press a label to jump.
 
-With evil-mode: press =gs= (or =s= if you bind it manually). I personally find =C-/= convenient --- it is easy to reach and does not shadow any useful evil bindings.
+With evil-mode: press ~gs~ (or ~s~ if you bind it manually). I personally find ~C-/~ convenient --- it is easy to reach and does not shadow any useful evil bindings.
 
 =M-x flash-jump-continue= resumes the previous search with the same pattern. Useful when you want to jump again to another match of the same text.
 
 *** Search Integration
 
-=flash-isearch-mode= adds labels to your regular incremental search. It works with =C-s= (Emacs isearch), =/=, =?= (evil-ex-search).
+~flash-isearch-mode~ adds labels to your regular incremental search. It works with ~C-s~ (Emacs isearch), ~/~, ~?~ (evil-ex-search).
 
 When enabled:
-- Start a search as usual (=C-s= or =/=).
+- Start a search as usual (~C-s~ or ~/~).
 - As you type, labels appear next to each match.
 - Press a label character to jump directly to that match.
-- Press =C-;= to toggle labels on or off during a search.
+- Press ~C-;~ to toggle labels on or off during a search.
 
 *** Character Motions (f/t/F/T)
 
-Requires evil-mode. Set up keybindings with =flash-evil-setup= (pass =t= for char motions) or =flash-char-setup-evil-keys= manually. Then enable labels:
+Requires evil-mode. Set up keybindings with ~flash-evil-setup~ (pass ~t~ for char motions) or ~flash-char-setup-evil-keys~ manually. Then enable labels:
 
 #+begin_src emacs-lisp
 (setq flash-char-jump-labels t)
 #+end_src
 
-Without ~flash-char-jump-labels~, =f= / =t= just jump to the first match (like normal evil motions). With it enabled, all matches get labels, so you can reach any match with a single keystroke instead of repeating =;=.
+Without ~flash-char-jump-labels~, ~f~ / ~t~ just jump to the first match (like normal evil motions). With it enabled, all matches get labels, so you can reach any match with a single keystroke instead of repeating ~;~.
 
 - =f{char}= / =F{char}= --- jump to character forward / backward.
 - =t{char}= / =T{char}= --- jump to just before character forward / backward.
-- =;= --- repeat last motion.
-- =,= --- repeat last motion in reverse (if =,= is your localleader, rebind to e.g. =\=).
+- ~;~ --- repeat last motion.
+- ~,~ --- repeat last motion in reverse (if ~,~ is your localleader, rebind to e.g. ~\~).
 
 *** Treesitter
 
@@ -187,7 +187,7 @@ This is useful for quickly selecting or operating on a surrounding code structur
 (flash-evil-setup t)  ; t = also set up f/t/F/T char motions
 #+end_src
 
-This binds =gs= to =flash-evil-jump= in normal, visual, motion, and operator states. With the optional argument, it also replaces =f=, =t=, =F=, =T= with flash-enhanced versions.
+This binds ~gs~ to ~flash-evil-jump~ in normal, visual, motion, and operator states. With the optional argument, it also replaces ~f~, ~t~, ~F~, ~T~ with flash-enhanced versions.
 
 *** Manual Setup
 
