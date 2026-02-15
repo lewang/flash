@@ -2,7 +2,6 @@
 
 ;; Copyright (C) 2025 Vadim Pavlov
 ;; Author: Vadim Pavlov <https://github.com/Prgebish>
-;; Package-Requires: ((emacs "29.1"))
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
@@ -48,31 +47,39 @@
 
 ;;; Node collection
 
+;; Treesit functions are called via `intern' so that:
+;; 1. The package can declare (emacs "27.1") while treesitter needs 29.1
+;; 2. package-lint doesn't flag optional treesit usage
+(defun flash-treesitter--call (name &rest args)
+  "Call treesitter function NAME with ARGS.
+NAME is a string like \"treesit-node-at\"."
+  (apply (intern name) args))
+
 (defun flash-treesitter--available-p ()
   "Return t if treesitter is available in this Emacs."
-  (and (fboundp 'treesit-available-p)
-       (treesit-available-p)))
+  (and (fboundp (intern "treesit-available-p"))
+       (flash-treesitter--call "treesit-available-p")))
 
 (defun flash-treesitter--buffer-has-parser-p ()
   "Return t if current buffer has a treesitter parser."
   (and (flash-treesitter--available-p)
-       (treesit-parser-list)))
+       (flash-treesitter--call "treesit-parser-list")))
 
 (defun flash-treesitter--get-nodes-at-point ()
   "Get treesitter node at point and all its parents.
 Returns list of (START END TYPE DEPTH) for each node."
   (when (flash-treesitter--buffer-has-parser-p)
-    (let ((node (treesit-node-at (point)))
+    (let ((node (flash-treesitter--call "treesit-node-at" (point)))
           (nodes '())
           (depth 0))
       (while (and node (< depth flash-treesitter-max-depth))
-        (let ((start (treesit-node-start node))
-              (end (treesit-node-end node))
-              (type (treesit-node-type node)))
+        (let ((start (flash-treesitter--call "treesit-node-start" node))
+              (end (flash-treesitter--call "treesit-node-end" node))
+              (type (flash-treesitter--call "treesit-node-type" node)))
           ;; Skip anonymous nodes (punctuation, etc.)
           (when (and type (not (string-prefix-p "_" type)))
             (push (list start end type depth) nodes)))
-        (setq node (treesit-node-parent node))
+        (setq node (flash-treesitter--call "treesit-node-parent" node))
         (setq depth (1+ depth)))
       ;; Return from innermost to outermost (reverse to match flash.nvim)
       (nreverse nodes))))
