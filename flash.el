@@ -284,8 +284,8 @@ Returns t if jump was made, nil if cancelled."
          ((flash--valid-label-prefix-p state char-str)
           (setf (flash-state-label-prefix state) char-str))
 
-         ;; Add to pattern (only if no prefix active)
-         ((not prefix)
+         ;; Add to pattern (only printable chars, no prefix active)
+         ((and char-str (not prefix))
           (setf (flash-state-pattern state)
                 (concat pattern char-str)))
 
