@@ -217,6 +217,23 @@ No single-char label should equal any multi-char prefix."
         (dolist (s single-labels)
           (should-not (member s prefixes)))))))
 
+(ert-deftest flash-label-deep-level-test ()
+  "Test that labels extend to 3+ chars when 2-char capacity is exceeded.
+With 3 chars (a,b,c) and 20 matches, 2-char capacity maxes out at
+(N-P)*(1+P).  The generator must go deeper to label all matches."
+  (let* ((flash-labels "abc")
+         (flash-label-uppercase nil)
+         (chars (string-to-list flash-labels))
+         (labels (flash--generate-labels chars 20)))
+    ;; All 20 must be labeled
+    (should (= 20 (length labels)))
+    ;; First labels should be single-char
+    (should (= 1 (length (nth 0 labels))))
+    ;; Some labels should be 3+ chars (2-char capacity is only ~6)
+    (should (cl-some (lambda (l) (> (length l) 2)) labels))
+    ;; All labels must be unique
+    (should (= (length labels) (length (delete-dups (copy-sequence labels)))))))
+
 (ert-deftest flash-label-prefix-matching-test ()
   "Test prefix matching for multi-char labels."
   (with-temp-buffer
