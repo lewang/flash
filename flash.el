@@ -250,7 +250,7 @@ Returns t if jump was made, nil if cancelled."
              (match-count (length (flash-state-matches state)))
              (prompt (flash--format-prompt pattern match-count prefix))
              (char (read-char prompt))
-             (char-str (char-to-string char)))
+             (char-str (and (<= 32 char 126) (char-to-string char))))
         (cond
          ;; Escape - cancel
          ((= char ?\e)
@@ -284,13 +284,16 @@ Returns t if jump was made, nil if cancelled."
          ((flash--valid-label-prefix-p state char-str)
           (setf (flash-state-label-prefix state) char-str))
 
-         ;; Add to pattern (only if no prefix active)
-         ((not prefix)
+         ;; Add to pattern (only printable chars, no prefix active)
+         ((and char-str (not prefix))
           (setf (flash-state-pattern state)
                 (concat pattern char-str)))
 
-         ;; Invalid input with prefix - ignore or beep
-         (t (beep)))))))
+         ;; Unhandled key - push back to event loop and exit
+         (t
+          (push char unread-command-events)
+          (flash-return-to-start state)
+          (throw 'flash-done nil)))))))
 
 (defun flash--do-jump (state)
   "Perform jump to first match in STATE.
