@@ -42,35 +42,49 @@ Uses multi-char labels when matches exceed available single-char labels."
 (defun flash--generate-labels (chars count)
   "Generate COUNT labels from CHARS.  Return them as strings.
 Returns list of strings.  When COUNT <= (length CHARS), all labels are
-single-char.  Otherwise, partition CHARS: reserve the last P chars as
-multi-char prefixes, use the remaining N-P as single-char labels.
-Multi-char labels are prefix + any non-prefix char, giving P*(N-P)
-combinations.  Total capacity: (N-P)*(1+P).  Single-char labels never
-collide with multi-char prefixes, so exact-match dispatch works."
+single-char.  Otherwise, partition CHARS into single-char labels (from
+the front) and multi-char prefixes (from the tail).  Multi-char labels
+are generated breadth-first: depth 1 (prefix+single), depth 2
+\(prefix+prefix+single), etc., so every match is always labeled.
+Single-char labels never collide with multi-char prefixes."
   (let ((n (length chars)))
     (if (<= count n)
         ;; All single-char labels
         (mapcar #'char-to-string (cl-subseq chars 0 count))
-      ;; Find minimum P (prefix count) such that (N-P)*(1+P) >= count
+      ;; Find minimum P (prefix count) such that (N-P)*(1+P) >= count.
+      ;; If 2-char capacity is insufficient at any P, fall back to
+      ;; floor(N/2) which balances single-char count vs exponential
+      ;; growth at deeper levels.
       (let ((p 1))
         (while (and (< p n)
                     (< (* (- n p) (1+ p)) count))
           (cl-incf p))
-        ;; Clamp: need at least 1 single-char slot
-        (when (>= p n) (setq p (1- n)))
+        (when (>= p n)
+          (setq p (max 1 (/ n 2))))
         (let* ((singles (cl-subseq chars 0 (- n p)))
                (prefixes (cl-subseq chars (- n p)))
                (labels (mapcar #'char-to-string singles))
                (multi nil)
-               (needed (- count (length labels))))
-          ;; Generate multi-char labels: each prefix paired with each single
+               (remaining (- count (length labels)))
+               ;; Prefix strings to extend at each depth level
+               (cur-prefixes (mapcar #'char-to-string
+                                     (append prefixes nil))))
+          ;; Generate multi-char labels breadth-first by depth
           (catch 'done
-            (dolist (pre prefixes)
-              (dolist (suf singles)
-                (push (string pre suf) multi)
-                (cl-decf needed)
-                (when (<= needed 0)
-                  (throw 'done nil)))))
+            (while cur-prefixes
+              (let ((next-prefixes nil))
+                (dolist (pfx cur-prefixes)
+                  ;; Terminal labels: prefix + single-char suffix
+                  (dolist (s singles)
+                    (push (concat pfx (char-to-string s)) multi)
+                    (cl-decf remaining)
+                    (when (<= remaining 0)
+                      (throw 'done nil)))
+                  ;; Extend prefix for next depth level
+                  (dolist (pc prefixes)
+                    (push (concat pfx (char-to-string pc))
+                          next-prefixes)))
+                (setq cur-prefixes (nreverse next-prefixes)))))
           ;; Singles first (closest matches), then multi (farthest)
           (append labels (nreverse multi)))))))
 
